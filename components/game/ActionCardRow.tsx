@@ -6,9 +6,16 @@ type Props = {
   description: string;
   cards: CardDefinition[];
   onSelect: (card: CardDefinition) => void;
+  disabled?: boolean;
 };
 
-export function ActionCardRow({ title, description, cards, onSelect }: Props) {
+export function ActionCardRow({
+  title,
+  description,
+  cards,
+  onSelect,
+  disabled = false,
+}: Props) {
   return (
     <div className="overflow-hidden border border-zinc-700 bg-zinc-950/70 shadow-lg [clip-path:polygon(1%_0,100%_0,99%_100%,0_100%)]">
       <div className="border-b border-zinc-800 bg-black/30 px-4 py-3 sm:px-5">
@@ -19,7 +26,12 @@ export function ActionCardRow({ title, description, cards, onSelect }: Props) {
       <div className="overflow-x-auto p-4">
         <div className="flex min-w-max gap-4">
           {cards.map((card) => (
-            <ActionCard key={card.id} card={card} onSelect={onSelect} />
+            <ActionCard
+              key={card.id}
+              card={card}
+              onSelect={onSelect}
+              disabled={disabled}
+            />
           ))}
         </div>
       </div>

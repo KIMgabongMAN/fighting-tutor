@@ -34,6 +34,7 @@ export type CardTag =
   | "접근";
 
 export type OpponentPersonality = "balanced" | "defensive" | "aggressive";
+export type DuelOutcome = "player" | "enemy" | "none";
 
 export type CardDefinition = {
   id: string;
@@ -47,6 +48,7 @@ export type CardDefinition = {
   color: "red" | "orange" | "gold" | "blue" | "gray";
   groupLabel: string;
   baseWeight: number;
+  moveSelf: number;
 };
 
 export type GameState = {
@@ -76,6 +78,12 @@ export type PhaseBannerState = {
   tone: PhaseTone;
 };
 
+export type DuelOverlayState = {
+  playerCard: CardDefinition;
+  enemyCard: CardDefinition;
+  outcome: DuelOutcome;
+};
+
 export type GameContext = {
   currentState: GameState;
   playerCard: CardDefinition;
@@ -96,6 +104,7 @@ export type ResolutionResult = {
   message: string;
   commentary: string;
   effectText?: string;
+  duelOutcome: DuelOutcome;
 };
 
 export type WeightedPickArgs = {

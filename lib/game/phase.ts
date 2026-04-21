@@ -1,4 +1,5 @@
 import type {
+  DuelOutcome,
   GameContext,
   PhaseId,
   PlayerRoleInPhase,
@@ -14,6 +15,12 @@ function getPlayerTensionGain(winner: Winner) {
 
 function getEnemyTensionGain(winner: Winner) {
   return winner === "enemy" ? 10 : 5;
+}
+
+function winnerToDuelOutcome(winner: Winner): DuelOutcome {
+  if (winner === "player") return "player";
+  if (winner === "enemy") return "enemy";
+  return "none";
 }
 
 export function clampTile(value: number) {
@@ -125,12 +132,18 @@ function applyTagOutcome(
   };
 }
 
-function moveCloser(playerTile: number, enemyTile: number) {
-  const nextPlayerTile = clampTile(playerTile + 1);
-  const nextEnemyTile = clampTile(enemyTile - 1);
+function applyCardMovement(
+  playerTile: number,
+  enemyTile: number,
+  playerMove: number,
+  enemyMove: number
+) {
+  let nextPlayerTile = clampTile(playerTile + playerMove);
+  let nextEnemyTile = clampTile(enemyTile - enemyMove);
 
   if (nextPlayerTile >= nextEnemyTile) {
-    return { nextPlayerTile: 2, nextEnemyTile: 3 };
+    nextPlayerTile = 2;
+    nextEnemyTile = 3;
   }
 
   return { nextPlayerTile, nextEnemyTile };
@@ -143,98 +156,19 @@ function moveFarther(playerTile: number, enemyTile: number) {
   };
 }
 
-function resolveNeutral(context: GameContext): ResolutionResult {
-  const { currentState, playerCard, enemyCard } = context;
-
-  let nextPlayerHp = currentState.playerHp;
-  let nextEnemyHp = currentState.enemyHp;
-  let nextPlayerTile = currentState.playerTile;
-  let nextEnemyTile = currentState.enemyTile;
-
-  let winner: Winner = "none";
-  let resultTag: ResultTag | null = null;
-  let message = "서로 탐색전을 벌였다.";
-  let commentary = "이번 선택으로 거리와 다음 국면이 정해진다.";
-  let effectText = "";
-
-  const pTags = new Set(playerCard.tags);
-  const eTags = new Set(enemyCard.tags);
-
-  if (pTags.has("빠름") && eTags.has("접근")) {
-    winner = "player";
-    resultTag = "승리";
-    nextEnemyHp -= 8;
-    ({ nextPlayerTile, nextEnemyTile } = moveCloser(nextPlayerTile, nextEnemyTile));
-    message = "네 빠른 견제가 상대의 접근을 끊어냈다.";
-    commentary = "빠른 공격은 접근 태그를 끊기에 좋다. 이후 압박 상황으로 이어진다.";
-    effectText = "견제 성공";
-  } else if (eTags.has("빠름") && pTags.has("접근")) {
-    winner = "enemy";
-    resultTag = "승리";
-    nextPlayerHp -= 8;
-    ({ nextPlayerTile, nextEnemyTile } = moveCloser(nextPlayerTile, nextEnemyTile));
-    message = "상대의 빠른 견제가 네 움직임을 잘랐다.";
-    commentary = "준비된 견제 앞에서 단순 전진은 수세로 몰릴 수 있다.";
-    effectText = "견제 피격";
-  } else if (pTags.has("공중") && eTags.has("공격") && eTags.has("빠름")) {
-    winner = "enemy";
-    resultTag = "다운";
-    nextPlayerHp -= 12;
-    message = "네 점프 진입이 끊기며 크게 맞았다.";
-    commentary = "준비된 빠른 대응 앞에서 공중 진입은 위험하다. 하드 다운으로 이어진다.";
-    effectText = "대공 피격";
-  } else if (eTags.has("공중") && pTags.has("공격") && pTags.has("빠름")) {
-    winner = "player";
-    resultTag = "승리";
-    nextEnemyHp -= 10;
-    ({ nextPlayerTile, nextEnemyTile } = moveCloser(nextPlayerTile, nextEnemyTile));
-    message = "상대의 공중 진입을 네 공격이 먼저 끊어냈다.";
-    commentary = "공중 진입을 읽은 견제가 먼저 닿으며 흐름을 가져왔다.";
-    effectText = "대응 성공";
-  } else if (pTags.has("공격") && eTags.has("수비")) {
-    winner = "player";
-    resultTag = "승리";
-    nextEnemyHp -= 5;
-    message = "네 공격이 상대 수비를 흔들며 유리한 흐름을 만들었다.";
-    commentary = "큰 히트는 아니더라도 다음 압박 상황으로 이어지는 기반을 만들었다.";
-    effectText = "흐름 확보";
-  } else if (eTags.has("공격") && pTags.has("수비")) {
-    winner = "enemy";
-    resultTag = "패배";
-    message = "네가 버티긴 했지만, 이번엔 상대가 주도권을 잡았다.";
-    commentary = "수비는 안전하지만 주도권을 넘길 수도 있다.";
-    effectText = "가드";
-  } else if (pTags.has("거리조절")) {
-    ({ nextPlayerTile, nextEnemyTile } = moveFarther(nextPlayerTile, nextEnemyTile));
-    message = "네가 뒤로 물러나며 거리를 벌렸다.";
-    commentary = "위험한 구간을 벗어나며 다음 중거리/원거리 교전으로 넘어간다.";
-    effectText = "거리 조절";
-  } else if (eTags.has("거리조절")) {
-    ({ nextPlayerTile, nextEnemyTile } = moveFarther(nextPlayerTile, nextEnemyTile));
-    message = "상대가 거리를 벌리며 교전 템포를 다시 정리했다.";
-    commentary = "한 턴 쉬어가며 다시 다른 거리의 교전으로 넘어간다.";
-    effectText = "거리 조절";
-  } else if (pTags.has("접근")) {
-    ({ nextPlayerTile, nextEnemyTile } = moveCloser(nextPlayerTile, nextEnemyTile));
-    message = "네가 조심스럽게 앞으로 나가며 거리를 좁혔다.";
-    commentary = "접근은 큰 승패가 없어도 다음 턴 교전 거리를 바꾼다.";
-    effectText = "전진";
-  } else if (eTags.has("접근")) {
-    ({ nextPlayerTile, nextEnemyTile } = moveCloser(nextPlayerTile, nextEnemyTile));
-    message = "상대가 앞으로 압박하며 거리를 좁혀 왔다.";
-    commentary = "다음 턴은 더 가까운 거리에서 시작될 가능성이 높다.";
-    effectText = "전진 압박";
-  } else {
-    message = "서로 큰 승부 없이 리듬만 조절했다.";
-    commentary = "이번엔 결정적인 태그 충돌이 없어 거리만 유지되었다.";
-  }
-
-  const outcome = applyTagOutcome(
-    resultTag,
-    winner,
-    nextPlayerTile,
-    nextEnemyTile
-  );
+function baseResult(
+  currentState: GameContext["currentState"],
+  winner: Winner,
+  nextPlayerTile: number,
+  nextEnemyTile: number,
+  nextPlayerHp: number,
+  nextEnemyHp: number,
+  message: string,
+  commentary: string,
+  effectText: string,
+  resultTag: ResultTag | null
+): ResolutionResult {
+  const outcome = applyTagOutcome(resultTag, winner, nextPlayerTile, nextEnemyTile);
 
   return {
     nextPlayerHp: Math.max(0, nextPlayerHp),
@@ -256,7 +190,109 @@ function resolveNeutral(context: GameContext): ResolutionResult {
     message,
     commentary,
     effectText,
+    duelOutcome: winnerToDuelOutcome(winner),
   };
+}
+
+function resolveNeutral(context: GameContext): ResolutionResult {
+  const { currentState, playerCard, enemyCard } = context;
+
+  let nextPlayerHp = currentState.playerHp;
+  let nextEnemyHp = currentState.enemyHp;
+
+  let { nextPlayerTile, nextEnemyTile } = applyCardMovement(
+    currentState.playerTile,
+    currentState.enemyTile,
+    playerCard.moveSelf,
+    enemyCard.moveSelf
+  );
+
+  let winner: Winner = "none";
+  let resultTag: ResultTag | null = null;
+  let message = "서로 탐색전을 벌였다.";
+  let commentary = "이번 선택으로 거리와 다음 국면이 정해진다.";
+  let effectText = "";
+
+  const pTags = new Set(playerCard.tags);
+  const eTags = new Set(enemyCard.tags);
+
+  if (pTags.has("빠름") && eTags.has("접근")) {
+    winner = "player";
+    resultTag = "승리";
+    nextEnemyHp -= 18;
+    message = "네 빠른 견제가 상대의 접근을 끊어냈다.";
+    commentary = "빠른 공격은 접근 태그를 끊기에 좋다. 이후 압박 상황으로 이어진다.";
+    effectText = "견제 성공";
+  } else if (eTags.has("빠름") && pTags.has("접근")) {
+    winner = "enemy";
+    resultTag = "승리";
+    nextPlayerHp -= 18;
+    message = "상대의 빠른 견제가 네 움직임을 잘랐다.";
+    commentary = "준비된 견제 앞에서 단순 전진은 수세로 몰릴 수 있다.";
+    effectText = "견제 피격";
+  } else if (pTags.has("공중") && eTags.has("공격") && eTags.has("빠름")) {
+    winner = "enemy";
+    resultTag = "다운";
+    nextPlayerHp -= 30;
+    message = "네 점프 진입이 끊기며 크게 맞았다.";
+    commentary = "준비된 빠른 대응 앞에서 공중 진입은 위험하다. 하드 다운으로 이어진다.";
+    effectText = "대공 피격";
+  } else if (eTags.has("공중") && pTags.has("공격") && pTags.has("빠름")) {
+    winner = "player";
+    resultTag = "승리";
+    nextEnemyHp -= 24;
+    message = "상대의 공중 진입을 네 공격이 먼저 끊어냈다.";
+    commentary = "공중 진입을 읽은 견제가 먼저 닿으며 흐름을 가져왔다.";
+    effectText = "대응 성공";
+  } else if (pTags.has("공격") && eTags.has("수비")) {
+    winner = "player";
+    resultTag = "승리";
+    nextEnemyHp -= 12;
+    message = "네 공격이 상대 수비를 흔들며 유리한 흐름을 만들었다.";
+    commentary = "큰 히트는 아니더라도 다음 압박 상황으로 이어지는 기반을 만들었다.";
+    effectText = "흐름 확보";
+  } else if (eTags.has("공격") && pTags.has("수비")) {
+    winner = "enemy";
+    resultTag = "패배";
+    nextPlayerHp -= 10;
+    message = "네가 버티긴 했지만, 이번엔 상대가 주도권을 잡았다.";
+    commentary = "수비는 안전하지만 주도권을 넘길 수도 있다.";
+    effectText = "가드";
+  } else if (pTags.has("거리조절")) {
+    ({ nextPlayerTile, nextEnemyTile } = moveFarther(nextPlayerTile, nextEnemyTile));
+    message = "네가 뒤로 물러나며 거리를 벌렸다.";
+    commentary = "위험한 구간을 벗어나며 다음 중거리/원거리 교전으로 넘어간다.";
+    effectText = "거리 조절";
+  } else if (eTags.has("거리조절")) {
+    ({ nextPlayerTile, nextEnemyTile } = moveFarther(nextPlayerTile, nextEnemyTile));
+    message = "상대가 거리를 벌리며 교전 템포를 다시 정리했다.";
+    commentary = "한 턴 쉬어가며 다시 다른 거리의 교전으로 넘어간다.";
+    effectText = "거리 조절";
+  } else if (pTags.has("접근")) {
+    message = "네가 조심스럽게 앞으로 나가며 거리를 좁혔다.";
+    commentary = "접근은 큰 승패가 없어도 다음 턴 교전 거리를 바꾼다.";
+    effectText = "전진";
+  } else if (eTags.has("접근")) {
+    message = "상대가 앞으로 압박하며 거리를 좁혀 왔다.";
+    commentary = "다음 턴은 더 가까운 거리에서 시작될 가능성이 높다.";
+    effectText = "전진 압박";
+  } else {
+    message = "서로 큰 승부 없이 리듬만 조절했다.";
+    commentary = "이번엔 결정적인 태그 충돌이 없어 거리만 유지되었다.";
+  }
+
+  return baseResult(
+    currentState,
+    winner,
+    nextPlayerTile,
+    nextEnemyTile,
+    nextPlayerHp,
+    nextEnemyHp,
+    message,
+    commentary,
+    effectText,
+    resultTag
+  );
 }
 
 function resolvePressureOrGuard(context: GameContext): ResolutionResult {
@@ -266,6 +302,16 @@ function resolvePressureOrGuard(context: GameContext): ResolutionResult {
   const attackerCard = playerIsAttacker ? playerCard : enemyCard;
   const defenderCard = playerIsAttacker ? enemyCard : playerCard;
 
+  const baseTiles = applyCardMovement(
+    currentState.playerTile,
+    currentState.enemyTile,
+    playerCard.moveSelf,
+    enemyCard.moveSelf
+  );
+
+  let nextPlayerTile = baseTiles.nextPlayerTile;
+  let nextEnemyTile = baseTiles.nextEnemyTile;
+
   const aTags = new Set(attackerCard.tags);
   const dTags = new Set(defenderCard.tags);
 
@@ -273,8 +319,6 @@ function resolvePressureOrGuard(context: GameContext): ResolutionResult {
   let resultTag: ResultTag | null = null;
   let nextPlayerHp = currentState.playerHp;
   let nextEnemyHp = currentState.enemyHp;
-  let nextPlayerTile = currentState.playerTile;
-  let nextEnemyTile = currentState.enemyTile;
   let message = "압박과 수비가 다시 부딪혔다.";
   let commentary = "태그 충돌에 따라 다음 국면이 정해진다.";
   let effectText = "";
@@ -316,98 +360,58 @@ function resolvePressureOrGuard(context: GameContext): ResolutionResult {
   };
 
   if (aTags.has("프레임트랩") && dTags.has("느림")) {
-    attackerWins(
-      "콤보",
-      14,
-      "프레임 트랩이 느린 개기기를 정확히 잡아냈다.",
-      "느림 태그는 프레임트랩에 무조건 취약하다.",
-      "카운터 히트"
-    );
+    attackerWins("콤보", 32, "프레임 트랩이 느린 개기기를 정확히 잡아냈다.", "느림 태그는 프레임트랩에 무조건 취약하다.", "카운터 히트");
   } else if (aTags.has("잡기")) {
-    if (dTags.has("수비")) {
-      attackerWins(
-        "다운",
-        7,
-        "기다렸다가 잡기가 수비를 정확히 읽어냈다.",
-        "수비 태그를 읽은 잡기는 하드 다운으로 이어질 수 있다.",
-        "잡기 성공"
-      );
-    } else if (dTags.has("잡기")) {
+    const gapAfterMovement = deriveGap(nextPlayerTile, nextEnemyTile);
+
+    if (gapAfterMovement === 0) {
+      if (dTags.has("수비")) {
+        attackerWins("다운", 24, "기다렸다가 잡기가 수비를 정확히 읽어냈다.", "이동 후 거리가 0이 되면 잡기 판정이 유효해진다.", "잡기 성공");
+      } else if (dTags.has("잡기")) {
+        winner = "none";
+        message = "서로 잡기 성향이 겹치며 큰 변화 없이 상황이 멈췄다.";
+        commentary = "잡기끼리는 패스 처리하고 다시 흐름을 본다.";
+        effectText = "패스";
+      } else if (dTags.has("공격") || dTags.has("개기기") || dTags.has("공중")) {
+        defenderWins("승리", 20, "상대가 먼저 움직여 잡기 시도가 실패했다.", "잡기는 수비를 읽을 때 강하지만 공격/공중 선택에는 명확히 진다.", "잡기 실패");
+      } else {
+        attackerWins("다운", 20, "근거리 잡기가 성립하며 상대를 무너뜨렸다.", "이동 후 거리 0에서는 잡기가 유효하다.", "잡기 성립");
+      }
+    } else {
       winner = "none";
-      message = "서로 잡기 성향이 겹치며 큰 변화 없이 상황이 멈췄다.";
-      commentary = "잡기끼리는 패스 처리하고 다시 흐름을 본다.";
-      effectText = "패스";
-    } else if (dTags.has("공격") || dTags.has("개기기") || dTags.has("공중")) {
-      defenderWins(
-        "승리",
-        8,
-        "상대가 먼저 움직여 잡기 시도가 실패했다.",
-        "잡기는 수비를 읽을 때 강하지만 공격/공중 선택에는 명확히 진다.",
-        "잡기 실패"
-      );
+      message = "잡기를 시도했지만 아직 완전히 붙지 않아 성립하지 않았다.";
+      commentary = "잡기는 카드 선택 후 이동까지 반영한 최종 거리 0에서만 유효하다.";
+      effectText = "잡기 불발";
     }
   } else if (aTags.has("무적") && dTags.has("공격") && !dTags.has("무적")) {
-    attackerWins(
-      "승리",
-      12,
-      "무적기가 상대의 공격 성향을 뚫고 반격에 성공했다.",
-      "무적 태그는 일반 공격 태그를 정면으로 뚫을 수 있다.",
-      "무적기 성공"
-    );
+    attackerWins("승리", 26, "무적기가 상대의 공격 성향을 뚫고 반격에 성공했다.", "무적 태그는 일반 공격 태그를 정면으로 뚫을 수 있다.", "무적기 성공");
+    ({ nextPlayerTile, nextEnemyTile } = moveFarther(nextPlayerTile, nextEnemyTile));
+    resultTag = null;
+    winner = playerIsAttacker ? "player" : "enemy";
+    message = "무적기가 히트하며 상대를 밀어내고 교전 상황으로 리셋됐다.";
+    commentary = "무적기 적중 후에는 사이거리 +1이 반영되고 일반 교전으로 돌아간다.";
+    effectText = "무적기 히트";
   } else if (dTags.has("무적") && aTags.has("공격") && !aTags.has("무적")) {
-    defenderWins(
-      "승리",
-      12,
-      "상대 무적기가 압박을 뚫고 반전에 성공했다.",
-      "수비자의 무적기는 공격 태그를 뒤집는 강력한 선택이다.",
-      "반전 성공"
-    );
+    defenderWins("승리", 26, "상대 무적기가 압박을 뚫고 반전에 성공했다.", "수비자의 무적기는 공격 태그를 뒤집는 강력한 선택이다.", "반전 성공");
+    ({ nextPlayerTile, nextEnemyTile } = moveFarther(nextPlayerTile, nextEnemyTile));
+    resultTag = null;
+    winner = playerIsAttacker ? "enemy" : "player";
+    message = "상대 무적기가 적중하며 사이거리가 벌어지고 교전 상황으로 리셋됐다.";
+    commentary = "무적기 적중 시에는 특수 국면 유지 대신 거리 +1 후 교전으로 돌아간다.";
+    effectText = "무적기 히트";
   } else if (dTags.has("수비") && aTags.has("공격")) {
     if (aTags.has("잡기")) {
-      attackerWins(
-        "다운",
-        6,
-        "가드를 굳힌 상대를 잡기로 무너뜨렸다.",
-        "수비 태그는 공격을 막지만 잡기에는 진다.",
-        "가드 붕괴"
-      );
+      attackerWins("다운", 22, "가드를 굳힌 상대를 잡기로 무너뜨렸다.", "수비 태그는 공격을 막지만 잡기에는 진다.", "가드 붕괴");
     } else {
-      defenderWins(
-        "패배",
-        0,
-        "상대가 침착하게 가드하며 압박을 한 템포 밀어냈다.",
-        "공격은 막혔고 수세 정리로 가드 상황이 이어진다.",
-        "가드 성공"
-      );
-      ({ nextPlayerTile, nextEnemyTile } = moveFarther(
-        nextPlayerTile,
-        nextEnemyTile
-      ));
+      defenderWins("패배", 8, "상대가 침착하게 가드하며 압박을 한 템포 밀어냈다.", "공격은 막혔고 수세 정리로 가드 상황이 이어진다.", "가드 성공");
+      ({ nextPlayerTile, nextEnemyTile } = moveFarther(nextPlayerTile, nextEnemyTile));
     }
   } else if (dTags.has("공중") && aTags.has("하단")) {
-    attackerWins(
-      "콤보",
-      10,
-      "하단 선택이 점프가드를 정확히 걸어 넘어뜨렸다.",
-      "점프가드는 하단 태그에 취약하다.",
-      "하단 적중"
-    );
+    attackerWins("콤보", 30, "하단 선택이 점프가드를 정확히 걸어 넘어뜨렸다.", "점프가드는 하단 태그에 취약하다.", "하단 적중");
   } else if (dTags.has("개기기") && aTags.has("프레임트랩")) {
-    attackerWins(
-      "콤보",
-      12,
-      "상대 개기기가 프레임 트랩에 걸리며 큰 반격을 허용했다.",
-      "개기기 태그는 프레임트랩 앞에서 가장 위험하다.",
-      "카운터"
-    );
+    attackerWins("콤보", 34, "상대 개기기가 프레임 트랩에 걸리며 큰 반격을 허용했다.", "개기기 태그는 프레임트랩 앞에서 가장 위험하다.", "카운터");
   } else if (aTags.has("이지선다") && dTags.has("수비")) {
-    attackerWins(
-      "승리",
-      8,
-      "개틀링 연계 이지가 통하며 압박이 계속 이어졌다.",
-      "1차 버전에서는 중단/하단 세부 분기 대신 압박 유지형 성공으로 처리한다.",
-      "이지 성공"
-    );
+    attackerWins("승리", 18, "개틀링 연계 이지가 통하며 압박이 계속 이어졌다.", "1차 버전에서는 중단/하단 세부 분기 대신 압박 유지형 성공으로 처리한다.", "이지 성공");
   } else if (aTags.has("수비") && dTags.has("수비")) {
     winner = "none";
     message = "서로 무리하지 않고 템포를 재조정했다.";
@@ -418,38 +422,62 @@ function resolvePressureOrGuard(context: GameContext): ResolutionResult {
     commentary = "다음 턴 카드와 거리 상태로 다시 국면을 본다.";
   }
 
-  const outcome = applyTagOutcome(
-    resultTag,
+  const finalPhase =
+    resultTag === null
+      ? deriveNeutralPhaseFromTiles(nextPlayerTile, nextEnemyTile)
+      : undefined;
+
+  if (resultTag === null && (effectText === "무적기 히트")) {
+    return {
+      nextPlayerHp: Math.max(0, nextPlayerHp),
+      nextEnemyHp: Math.max(0, nextEnemyHp),
+      nextPlayerTension: Math.min(
+        100,
+        currentState.playerTension + getPlayerTensionGain(winner)
+      ),
+      nextEnemyTension: Math.min(
+        100,
+        currentState.enemyTension + getEnemyTensionGain(winner)
+      ),
+      nextPlayerTile,
+      nextEnemyTile,
+      nextPhase: finalPhase!,
+      nextPlayerRoleInPhase: "neutral",
+      nextPlayerStateText: "뉴트럴",
+      nextEnemyStateText: "뉴트럴",
+      message,
+      commentary,
+      effectText,
+      duelOutcome: winnerToDuelOutcome(winner),
+    };
+  }
+
+  return baseResult(
+    currentState,
     winner,
     nextPlayerTile,
-    nextEnemyTile
-  );
-
-  return {
-    nextPlayerHp: Math.max(0, nextPlayerHp),
-    nextEnemyHp: Math.max(0, nextEnemyHp),
-    nextPlayerTension: Math.min(
-      100,
-      currentState.playerTension + getPlayerTensionGain(winner)
-    ),
-    nextEnemyTension: Math.min(
-      100,
-      currentState.enemyTension + getEnemyTensionGain(winner)
-    ),
-    nextPlayerTile,
     nextEnemyTile,
-    nextPhase: outcome.nextPhase,
-    nextPlayerRoleInPhase: outcome.nextPlayerRoleInPhase,
-    nextPlayerStateText: outcome.nextPlayerStateText,
-    nextEnemyStateText: outcome.nextEnemyStateText,
+    nextPlayerHp,
+    nextEnemyHp,
     message,
     commentary,
     effectText,
-  };
+    resultTag
+  );
 }
 
 function resolveHardDown(context: GameContext): ResolutionResult {
   const { currentState, playerCard, enemyCard } = context;
+
+  const baseTiles = applyCardMovement(
+    currentState.playerTile,
+    currentState.enemyTile,
+    playerCard.moveSelf,
+    enemyCard.moveSelf
+  );
+
+  let nextPlayerTile = baseTiles.nextPlayerTile;
+  let nextEnemyTile = baseTiles.nextEnemyTile;
 
   let winner: Winner = "none";
   let resultTag: ResultTag | null = null;
@@ -471,21 +499,21 @@ function resolveHardDown(context: GameContext): ResolutionResult {
     } else if (playerCard.id === "harddown_attacker_meaty") {
       winner = "player";
       resultTag = "승리";
-      nextEnemyHp -= 8;
+      nextEnemyHp -= 18;
       message = "기상 압박이 제대로 깔리며 다시 압박 상황을 만들었다.";
       commentary = "다운 이후 한 번 더 흐름을 이어갈 수 있는 전형적인 선택이다.";
       effectText = "기상 압박";
     } else if (enemyCard.id === "harddown_defender_reversal") {
       winner = "enemy";
       resultTag = "승리";
-      nextPlayerHp -= 12;
+      nextPlayerHp -= 28;
       message = "상대 기상 무적기에 반격을 허용했다.";
       commentary = "하드 다운이어도 무적기 가능성을 완전히 버리면 안 된다.";
       effectText = "반전 허용";
     } else {
       winner = "player";
       resultTag = "승리";
-      nextEnemyHp -= 6;
+      nextEnemyHp -= 16;
       message = "하드 다운 이후 전개를 유리하게 이어갔다.";
       commentary = "다운을 만든 쪽은 기상 직전 압박으로 다음 국면을 유리하게 만들기 쉽다.";
       effectText = "압박 유지";
@@ -494,13 +522,14 @@ function resolveHardDown(context: GameContext): ResolutionResult {
     if (playerCard.id === "harddown_defender_reversal") {
       winner = "player";
       resultTag = "승리";
-      nextEnemyHp -= 12;
+      nextEnemyHp -= 28;
       message = "기상 무적기가 성공하며 흐름을 뒤집었다.";
       commentary = "하드 다운 수비에서도 무적기는 가장 강한 반전 선택 중 하나다.";
       effectText = "기상 반전";
     } else if (playerCard.id === "harddown_defender_riseGuard") {
       winner = "enemy";
       resultTag = "패배";
+      nextPlayerHp -= 10;
       message = "침착하게 막아냈지만 여전히 상대 턴이 이어지고 있다.";
       commentary = "기상 가드는 가장 안전하지만 바로 턴을 가져오지는 못한다.";
       effectText = "기상 가드";
@@ -511,34 +540,18 @@ function resolveHardDown(context: GameContext): ResolutionResult {
     }
   }
 
-  const outcome = applyTagOutcome(
-    resultTag,
+  return baseResult(
+    currentState,
     winner,
-    currentState.playerTile,
-    currentState.enemyTile
-  );
-
-  return {
-    nextPlayerHp: Math.max(0, nextPlayerHp),
-    nextEnemyHp: Math.max(0, nextEnemyHp),
-    nextPlayerTension: Math.min(
-      100,
-      currentState.playerTension + getPlayerTensionGain(winner)
-    ),
-    nextEnemyTension: Math.min(
-      100,
-      currentState.enemyTension + getEnemyTensionGain(winner)
-    ),
-    nextPlayerTile: currentState.playerTile,
-    nextEnemyTile: currentState.enemyTile,
-    nextPhase: outcome.nextPhase,
-    nextPlayerRoleInPhase: outcome.nextPlayerRoleInPhase,
-    nextPlayerStateText: outcome.nextPlayerStateText,
-    nextEnemyStateText: outcome.nextEnemyStateText,
+    nextPlayerTile,
+    nextEnemyTile,
+    nextPlayerHp,
+    nextEnemyHp,
     message,
     commentary,
     effectText,
-  };
+    resultTag
+  );
 }
 
 function resolveCombo(context: GameContext): ResolutionResult {
@@ -554,24 +567,27 @@ function resolveCombo(context: GameContext): ResolutionResult {
     "콤보 상황에서는 데미지, 다운, 압박 리셋 중 어떤 이득을 챙길지 선택한다.";
   let effectText = "콤보 선택";
 
+  let nextPlayerTile = currentState.playerTile;
+  let nextEnemyTile = currentState.enemyTile;
+
   if (currentState.playerRoleInPhase === "attacker") {
     if (playerCard.id === "combo_attacker_damage") {
-      nextEnemyHp -= 16;
+      nextEnemyHp -= 34;
       resultTag = "승리";
       message = "최대 데미지 선택으로 즉시 체력 이득을 크게 챙겼다.";
     } else if (playerCard.id === "combo_attacker_down") {
-      nextEnemyHp -= 10;
+      nextEnemyHp -= 30;
       resultTag = "다운";
       message = "다운 마무리로 하드 다운 상황을 만들었다.";
     } else if (playerCard.id === "combo_attacker_reset") {
-      nextEnemyHp -= 6;
+      nextEnemyHp -= 22;
       resultTag = "승리";
       message = "콤보를 짧게 끊고 다시 압박 상황으로 넘어갔다.";
     }
   } else {
     if (playerCard.id === "combo_defender_burst") {
-      const nextPlayerTile = clampTile(currentState.playerTile - 1);
-      const nextEnemyTile = clampTile(currentState.enemyTile + 1);
+      nextPlayerTile = clampTile(currentState.playerTile - 1);
+      nextEnemyTile = clampTile(currentState.enemyTile + 1);
 
       return {
         nextPlayerHp,
@@ -587,44 +603,30 @@ function resolveCombo(context: GameContext): ResolutionResult {
         message: "버스트로 콤보를 강제로 끊고 거리를 다시 벌렸다.",
         commentary: "버스트는 수세 콤보 상황을 끊는 강력한 리셋 수단이다.",
         effectText: "버스트",
+        duelOutcome: "none",
       };
     }
 
     winner = "enemy";
     resultTag = "패배";
+    nextPlayerHp -= 26;
     message = "버티기를 선택해 콤보 피해를 감수했다.";
     commentary = "자원을 아끼는 대신 다음 국면 준비가 중요해진다.";
     effectText = "피해 감수";
   }
 
-  const outcome = applyTagOutcome(
-    resultTag,
+  return baseResult(
+    currentState,
     winner,
-    currentState.playerTile,
-    currentState.enemyTile
-  );
-
-  return {
-    nextPlayerHp: Math.max(0, nextPlayerHp),
-    nextEnemyHp: Math.max(0, nextEnemyHp),
-    nextPlayerTension: Math.min(
-      100,
-      currentState.playerTension + getPlayerTensionGain(winner)
-    ),
-    nextEnemyTension: Math.min(
-      100,
-      currentState.enemyTension + getEnemyTensionGain(winner)
-    ),
-    nextPlayerTile: currentState.playerTile,
-    nextEnemyTile: currentState.enemyTile,
-    nextPhase: outcome.nextPhase,
-    nextPlayerRoleInPhase: outcome.nextPlayerRoleInPhase,
-    nextPlayerStateText: outcome.nextPlayerStateText,
-    nextEnemyStateText: outcome.nextEnemyStateText,
+    nextPlayerTile,
+    nextEnemyTile,
+    nextPlayerHp,
+    nextEnemyHp,
     message,
     commentary,
     effectText,
-  };
+    resultTag
+  );
 }
 
 export function resolvePhaseTurn(context: GameContext): ResolutionResult {

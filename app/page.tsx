@@ -5,23 +5,27 @@ import { ActionCardRow } from "@/components/game/ActionCardRow";
 import { BattleField } from "@/components/game/BattleField";
 import { BattleHud } from "@/components/game/BattleHud";
 import { CommentaryBox } from "@/components/game/CommentaryBox";
+import { DuelOverlay } from "@/components/game/DuelOverlay";
 import { PhaseBanner } from "@/components/game/PhaseBanner";
 import { PHASE_META, getCardsForPhase } from "@/lib/game/data";
-import { resolvePhaseTurn, deriveDistanceLabel, deriveNeutralPhaseFromTiles } from "@/lib/game/phase";
+import { resolvePhaseTurn, deriveDistanceLabel } from "@/lib/game/phase";
 import { pickWeightedRandomCard } from "@/lib/game/random";
 import type {
   CardDefinition,
+  DuelOverlayState,
   GameContext,
   GameState,
   OpponentPersonality,
   PhaseBannerState,
   PhaseId,
   PlayerRoleInPhase,
+  ResolutionResult,
 } from "@/lib/game/types";
 
 const INITIAL_PLAYER_TILE = 1;
 const INITIAL_ENEMY_TILE = 4;
 const ENEMY_PERSONALITY: OpponentPersonality = "defensive";
+const DUEL_ANIMATION_MS = 4800;
 
 export default function Page() {
   const [state, setState] = useState<GameState>({
@@ -47,7 +51,10 @@ export default function Page() {
   });
 
   const [banner, setBanner] = useState<PhaseBannerState | null>(null);
+  const [duelOverlay, setDuelOverlay] = useState<DuelOverlayState | null>(null);
+
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const duelApplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentCards = useMemo(() => {
     return getCardsForPhase(state.phase, state.playerRoleInPhase);
@@ -58,6 +65,15 @@ export default function Page() {
   const distanceLabel = useMemo(() => {
     return deriveDistanceLabel(state.playerTile, state.enemyTile);
   }, [state.playerTile, state.enemyTile]);
+
+  const enemyRole: PlayerRoleInPhase = useMemo(() => {
+    if (state.playerRoleInPhase === "attacker") return "defender";
+    if (state.playerRoleInPhase === "defender") return "attacker";
+    return "neutral";
+  }, [state.playerRoleInPhase]);
+
+  const isGameOver = state.playerHp <= 0 || state.enemyHp <= 0;
+  const isDuelPlaying = duelOverlay !== null;
 
   const showBanner = (phase: PhaseId) => {
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
@@ -78,10 +94,78 @@ export default function Page() {
 
     return () => {
       if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+      if (duelApplyTimerRef.current) clearTimeout(duelApplyTimerRef.current);
     };
   }, []);
 
+  const applyResolvedResult = (
+    result: ResolutionResult,
+    playerCard: CardDefinition,
+    enemyCard: CardDefinition
+  ) => {
+    setState((prev) => ({
+      ...prev,
+      playerHp: result.nextPlayerHp,
+      enemyHp: result.nextEnemyHp,
+      playerTension: result.nextPlayerTension,
+      enemyTension: result.nextEnemyTension,
+      playerTile: result.nextPlayerTile,
+      enemyTile: result.nextEnemyTile,
+      phase: result.nextPhase,
+      playerRoleInPhase: result.nextPlayerRoleInPhase,
+      playerStateText: result.nextPlayerStateText,
+      enemyStateText: result.nextEnemyStateText,
+      message: result.message,
+      commentary: result.commentary,
+      effectText: result.effectText ?? "",
+      turn: prev.turn + 1,
+      lastPlayerCardId: playerCard.id,
+      lastEnemyCardId: enemyCard.id,
+    }));
+
+    setDuelOverlay(null);
+    showBanner(result.nextPhase);
+  };
+
+  const handleSelectCard = (playerCard: CardDefinition) => {
+    if (isGameOver || isDuelPlaying) return;
+
+    const enemyCards = getCardsForPhase(state.phase, enemyRole);
+
+    const enemyCard = pickWeightedRandomCard({
+      cards: enemyCards,
+      state,
+      role: enemyRole,
+      personality: state.enemyPersonality,
+    });
+
+    const context: GameContext = {
+      currentState: state,
+      playerCard,
+      enemyCard,
+    };
+
+    const result = resolvePhaseTurn(context);
+
+    setDuelOverlay({
+      playerCard,
+      enemyCard,
+      outcome: result.duelOutcome,
+    });
+
+    if (duelApplyTimerRef.current) clearTimeout(duelApplyTimerRef.current);
+
+    duelApplyTimerRef.current = setTimeout(() => {
+      applyResolvedResult(result, playerCard, enemyCard);
+    }, DUEL_ANIMATION_MS);
+  };
+
   const handleReset = () => {
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    if (duelApplyTimerRef.current) clearTimeout(duelApplyTimerRef.current);
+
+    setDuelOverlay(null);
+
     setState({
       playerHp: 100,
       enemyHp: 100,
@@ -107,55 +191,6 @@ export default function Page() {
     showBanner("opening");
   };
 
-  const enemyRole: PlayerRoleInPhase = useMemo(() => {
-    if (state.playerRoleInPhase === "attacker") return "defender";
-    if (state.playerRoleInPhase === "defender") return "attacker";
-    return "neutral";
-  }, [state.playerRoleInPhase]);
-
-  const handleSelectCard = (playerCard: CardDefinition) => {
-    if (state.playerHp <= 0 || state.enemyHp <= 0) return;
-
-    const enemyCards = getCardsForPhase(state.phase, enemyRole);
-
-    const enemyCard = pickWeightedRandomCard({
-      cards: enemyCards,
-      state,
-      role: enemyRole,
-      personality: state.enemyPersonality,
-    });
-
-    const context: GameContext = {
-      currentState: state,
-      playerCard,
-      enemyCard,
-    };
-
-    const result = resolvePhaseTurn(context);
-
-    setState((prev) => ({
-      ...prev,
-      playerHp: result.nextPlayerHp,
-      enemyHp: result.nextEnemyHp,
-      playerTension: result.nextPlayerTension,
-      enemyTension: result.nextEnemyTension,
-      playerTile: result.nextPlayerTile,
-      enemyTile: result.nextEnemyTile,
-      phase: result.nextPhase,
-      playerRoleInPhase: result.nextPlayerRoleInPhase,
-      playerStateText: result.nextPlayerStateText,
-      enemyStateText: result.nextEnemyStateText,
-      message: result.message,
-      commentary: result.commentary,
-      effectText: result.effectText ?? "",
-      turn: prev.turn + 1,
-      lastPlayerCardId: playerCard.id,
-      lastEnemyCardId: enemyCard.id,
-    }));
-
-    showBanner(result.nextPhase);
-  };
-
   const selectionTitle = useMemo(() => {
     if (state.playerRoleInPhase === "attacker") return "공격자 선택지";
     if (state.playerRoleInPhase === "defender") return "수비자 선택지";
@@ -173,8 +208,6 @@ export default function Page() {
 
     return "개막과 일반 교전에서는 중립 카드로 먼저 승부를 만든다.";
   }, [state.playerRoleInPhase]);
-
-  const isGameOver = state.playerHp <= 0 || state.enemyHp <= 0;
 
   return (
     <>
@@ -223,6 +256,14 @@ export default function Page() {
 
             {banner && <PhaseBanner banner={banner} />}
 
+            {duelOverlay && (
+              <DuelOverlay
+                playerCard={duelOverlay.playerCard}
+                enemyCard={duelOverlay.enemyCard}
+                outcome={duelOverlay.outcome}
+              />
+            )}
+
             <div className="flex flex-col pb-4 sm:pb-6">
               <BattleHud
                 playerHp={state.playerHp}
@@ -255,6 +296,7 @@ export default function Page() {
                     description={selectionDescription}
                     cards={currentCards}
                     onSelect={handleSelectCard}
+                    disabled={isDuelPlaying}
                   />
                 ) : (
                   <div className="border-t border-zinc-800 bg-black/60 px-4 py-3 sm:px-5">

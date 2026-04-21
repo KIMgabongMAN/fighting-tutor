@@ -3,6 +3,7 @@ import type { CardDefinition } from "@/lib/game/types";
 type Props = {
   card: CardDefinition;
   onSelect: (card: CardDefinition) => void;
+  disabled?: boolean;
 };
 
 const toneClassMap: Record<string, string> = {
@@ -13,20 +14,23 @@ const toneClassMap: Record<string, string> = {
   gray: "from-zinc-800 to-zinc-950 border-zinc-600 hover:border-zinc-400",
 };
 
-export function ActionCard({ card, onSelect }: Props) {
+export function ActionCard({ card, onSelect, disabled = false }: Props) {
   const toneClass = toneClassMap[card.color] ?? toneClassMap.gray;
 
   return (
     <button
       onClick={() => onSelect(card)}
-      className={`group w-[260px] shrink-0 border bg-gradient-to-b ${toneClass} p-4 text-left transition hover:-translate-y-1 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] sm:w-[300px] sm:p-5`}
+      disabled={disabled}
+      className={`group w-[260px] shrink-0 border bg-gradient-to-b ${toneClass} p-4 text-left transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-40 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] sm:w-[300px] sm:p-5`}
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="border border-white/10 bg-black/30 px-3 py-1 text-lg font-black tracking-[0.12em] text-white">
             {card.order}
           </div>
-          <div className="text-[11px] font-black tracking-[0.22em] text-zinc-300 uppercase">{card.groupLabel}</div>
+          <div className="text-[11px] font-black tracking-[0.22em] text-zinc-300 uppercase">
+            {card.groupLabel}
+          </div>
         </div>
         <div className="text-sm font-black text-zinc-400">{card.order}</div>
       </div>
@@ -48,7 +52,7 @@ export function ActionCard({ card, onSelect }: Props) {
 
       <div className="mb-2 text-xs font-black tracking-[0.2em] text-zinc-400">결과 태그</div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {card.resultTags.length > 0 ? (
           card.resultTags.map((tag) => (
             <span
@@ -64,6 +68,8 @@ export function ActionCard({ card, onSelect }: Props) {
           </span>
         )}
       </div>
+
+      <div className="text-xs text-zinc-400">이동: {card.moveSelf > 0 ? `+${card.moveSelf}` : card.moveSelf}</div>
     </button>
   );
 }

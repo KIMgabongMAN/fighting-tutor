@@ -30,6 +30,7 @@ const OPENING_NEUTRAL_CARDS: CardDefinition[] = [
     color: "red",
     groupLabel: "개막",
     baseWeight: 12,
+    moveSelf: 1,
   },
   {
     id: "opening_poke",
@@ -43,6 +44,7 @@ const OPENING_NEUTRAL_CARDS: CardDefinition[] = [
     color: "orange",
     groupLabel: "개막",
     baseWeight: 14,
+    moveSelf: 0,
   },
   {
     id: "opening_jump",
@@ -56,6 +58,7 @@ const OPENING_NEUTRAL_CARDS: CardDefinition[] = [
     color: "gold",
     groupLabel: "개막",
     baseWeight: 9,
+    moveSelf: 2,
   },
   {
     id: "opening_guard",
@@ -69,6 +72,7 @@ const OPENING_NEUTRAL_CARDS: CardDefinition[] = [
     color: "blue",
     groupLabel: "개막",
     baseWeight: 10,
+    moveSelf: 0,
   },
   {
     id: "opening_backstep",
@@ -82,6 +86,7 @@ const OPENING_NEUTRAL_CARDS: CardDefinition[] = [
     color: "gray",
     groupLabel: "개막",
     baseWeight: 8,
+    moveSelf: -1,
   },
 ];
 
@@ -97,6 +102,7 @@ const NEUTRAL_CARDS_BASE: Omit<CardDefinition, "phase">[] = [
     color: "red",
     groupLabel: "교전",
     baseWeight: 14,
+    moveSelf: 0,
   },
   {
     id: "neutral_heavy",
@@ -109,6 +115,7 @@ const NEUTRAL_CARDS_BASE: Omit<CardDefinition, "phase">[] = [
     color: "orange",
     groupLabel: "교전",
     baseWeight: 9,
+    moveSelf: 0,
   },
   {
     id: "neutral_jump",
@@ -121,6 +128,7 @@ const NEUTRAL_CARDS_BASE: Omit<CardDefinition, "phase">[] = [
     color: "gold",
     groupLabel: "교전",
     baseWeight: 8,
+    moveSelf: 2,
   },
   {
     id: "neutral_guard",
@@ -133,6 +141,7 @@ const NEUTRAL_CARDS_BASE: Omit<CardDefinition, "phase">[] = [
     color: "blue",
     groupLabel: "교전",
     baseWeight: 10,
+    moveSelf: 0,
   },
   {
     id: "neutral_backstep",
@@ -145,6 +154,7 @@ const NEUTRAL_CARDS_BASE: Omit<CardDefinition, "phase">[] = [
     color: "gray",
     groupLabel: "교전",
     baseWeight: 9,
+    moveSelf: -1,
   },
 ];
 
@@ -161,6 +171,7 @@ const PRESSURE_ATTACKER_CARDS: CardDefinition[] = [
     color: "red",
     groupLabel: "공격자",
     baseWeight: 14,
+    moveSelf: 0,
   },
   {
     id: "pressure_attacker_frameTrap",
@@ -174,6 +185,7 @@ const PRESSURE_ATTACKER_CARDS: CardDefinition[] = [
     color: "orange",
     groupLabel: "공격자",
     baseWeight: 13,
+    moveSelf: 0,
   },
   {
     id: "pressure_attacker_waitGrab",
@@ -187,6 +199,7 @@ const PRESSURE_ATTACKER_CARDS: CardDefinition[] = [
     color: "gold",
     groupLabel: "공격자",
     baseWeight: 10,
+    moveSelf: 1,
   },
   {
     id: "pressure_attacker_reversal",
@@ -200,6 +213,7 @@ const PRESSURE_ATTACKER_CARDS: CardDefinition[] = [
     color: "gray",
     groupLabel: "공격자",
     baseWeight: 5,
+    moveSelf: 0,
   },
   {
     id: "pressure_attacker_wait",
@@ -213,6 +227,7 @@ const PRESSURE_ATTACKER_CARDS: CardDefinition[] = [
     color: "blue",
     groupLabel: "공격자",
     baseWeight: 8,
+    moveSelf: 0,
   },
 ];
 
@@ -229,6 +244,7 @@ const PRESSURE_DEFENDER_CARDS: CardDefinition[] = [
     color: "blue",
     groupLabel: "수비자",
     baseWeight: 16,
+    moveSelf: 0,
   },
   {
     id: "pressure_defender_grab",
@@ -242,6 +258,7 @@ const PRESSURE_DEFENDER_CARDS: CardDefinition[] = [
     color: "orange",
     groupLabel: "수비자",
     baseWeight: 6,
+    moveSelf: 1,
   },
   {
     id: "pressure_defender_jumpGuard",
@@ -255,6 +272,7 @@ const PRESSURE_DEFENDER_CARDS: CardDefinition[] = [
     color: "gold",
     groupLabel: "수비자",
     baseWeight: 8,
+    moveSelf: 1,
   },
   {
     id: "pressure_defender_abare",
@@ -268,6 +286,7 @@ const PRESSURE_DEFENDER_CARDS: CardDefinition[] = [
     color: "red",
     groupLabel: "수비자",
     baseWeight: 7,
+    moveSelf: 0,
   },
   {
     id: "pressure_defender_reversal",
@@ -281,6 +300,7 @@ const PRESSURE_DEFENDER_CARDS: CardDefinition[] = [
     color: "gray",
     groupLabel: "수비자",
     baseWeight: 4,
+    moveSelf: 0,
   },
 ];
 
@@ -297,6 +317,7 @@ const HARD_DOWN_ATTACKER_CARDS: CardDefinition[] = [
     color: "red",
     groupLabel: "공격자",
     baseWeight: 11,
+    moveSelf: 1,
   },
   {
     id: "harddown_attacker_meaty",
@@ -310,6 +331,7 @@ const HARD_DOWN_ATTACKER_CARDS: CardDefinition[] = [
     color: "orange",
     groupLabel: "공격자",
     baseWeight: 13,
+    moveSelf: 0,
   },
   {
     id: "harddown_attacker_wait",
@@ -323,6 +345,7 @@ const HARD_DOWN_ATTACKER_CARDS: CardDefinition[] = [
     color: "gray",
     groupLabel: "공격자",
     baseWeight: 8,
+    moveSelf: 0,
   },
 ];
 
@@ -339,6 +362,7 @@ const HARD_DOWN_DEFENDER_CARDS: CardDefinition[] = [
     color: "blue",
     groupLabel: "수비자",
     baseWeight: 15,
+    moveSelf: 0,
   },
   {
     id: "harddown_defender_riseAbare",
@@ -352,6 +376,7 @@ const HARD_DOWN_DEFENDER_CARDS: CardDefinition[] = [
     color: "red",
     groupLabel: "수비자",
     baseWeight: 7,
+    moveSelf: 0,
   },
   {
     id: "harddown_defender_reversal",
@@ -365,6 +390,7 @@ const HARD_DOWN_DEFENDER_CARDS: CardDefinition[] = [
     color: "gray",
     groupLabel: "수비자",
     baseWeight: 5,
+    moveSelf: 0,
   },
 ];
 
@@ -381,6 +407,7 @@ const COMBO_ATTACKER_CARDS: CardDefinition[] = [
     color: "red",
     groupLabel: "공격자",
     baseWeight: 14,
+    moveSelf: 0,
   },
   {
     id: "combo_attacker_down",
@@ -394,6 +421,7 @@ const COMBO_ATTACKER_CARDS: CardDefinition[] = [
     color: "orange",
     groupLabel: "공격자",
     baseWeight: 11,
+    moveSelf: 0,
   },
   {
     id: "combo_attacker_reset",
@@ -407,6 +435,7 @@ const COMBO_ATTACKER_CARDS: CardDefinition[] = [
     color: "gold",
     groupLabel: "공격자",
     baseWeight: 9,
+    moveSelf: 0,
   },
 ];
 
@@ -423,6 +452,7 @@ const COMBO_DEFENDER_CARDS: CardDefinition[] = [
     color: "blue",
     groupLabel: "수비자",
     baseWeight: 10,
+    moveSelf: -1,
   },
   {
     id: "combo_defender_hold",
@@ -436,6 +466,7 @@ const COMBO_DEFENDER_CARDS: CardDefinition[] = [
     color: "gray",
     groupLabel: "수비자",
     baseWeight: 12,
+    moveSelf: 0,
   },
 ];
 
