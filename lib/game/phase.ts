@@ -82,6 +82,17 @@ function isSameTagSet(a: CardDefinition, b: CardDefinition) {
   return sa.every((tag, idx) => tag === sb[idx]);
 }
 
+function isMeaty(card: CardDefinition) {
+  return card.id === "okizeme_meaty";
+}
+
+function isWakeupDefenderCard(card: CardDefinition) {
+  return (
+    card.phase === "hardDown" &&
+    card.role === "defender"
+  );
+}
+
 function applyAdvance(
   playerTile: number,
   enemyTile: number,
@@ -311,7 +322,26 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     effectText = "무적기 히트";
     message = "상대 승부수가 네 공격 포함 태그를 뚫었다.";
     commentary = "무적기 적중 후엔 흐름이 교전 쪽으로 강제 리셋되기 쉽다.";
-  } else if (
+  }
+
+  // 하드다운 기상 공통 규칙
+  else if (isMeaty(playerCard) && isWakeupDefenderCard(enemyCard) && !isInvincible(enemyCard) && !hasDefenseTag(enemyCard)) {
+    winner = "player";
+    winningCard = playerCard;
+    effectText = "기상 카운터";
+    message = "기상에 깔아두기가 상대의 기상 행동을 커트했다.";
+    commentary =
+      "하드다운 기상에서는 무적 리버설이 아닌 이상, 가드를 제외한 행동이 딜레이 없는 깔아두기에 진다.";
+  } else if (isMeaty(enemyCard) && isWakeupDefenderCard(playerCard) && !isInvincible(playerCard) && !hasDefenseTag(playerCard)) {
+    winner = "enemy";
+    winningCard = enemyCard;
+    effectText = "기상 카운터";
+    message = "상대 기상에 깔아두기가 네 기상 행동을 커트했다.";
+    commentary =
+      "하드다운 기상에서는 무적 리버설이 아닌 이상, 가드를 제외한 행동이 딜레이 없는 깔아두기에 진다.";
+  }
+
+  else if (
     playerCard.tags.includes("선공") &&
     finalGap === 0 &&
     !isInvincible(enemyCard) &&
@@ -461,9 +491,10 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     winner = playerCard.advance > enemyCard.advance ? "player" : "enemy";
     winningCard = winner === "player" ? playerCard : enemyCard;
     effectText = "주도권 확보";
-    message = winner === "player"
-      ? "네가 더 적극적으로 거리를 장악했다."
-      : "상대가 더 적극적으로 거리를 장악했다.";
+    message =
+      winner === "player"
+        ? "네가 더 적극적으로 거리를 장악했다."
+        : "상대가 더 적극적으로 거리를 장악했다.";
     commentary = "완전한 상쇄가 아니면, 더 적극적인 선택이 주도권을 가져간다.";
   }
 
