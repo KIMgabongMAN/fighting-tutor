@@ -8,6 +8,7 @@ type Props = {
   phaseTitle: string;
   playerStateText: string;
   enemyStateText: string;
+  enemyPersonalityLabel: string;
 };
 
 function fighterStateClass(state: string) {
@@ -35,6 +36,7 @@ export function BattleHud({
   phaseTitle,
   playerStateText,
   enemyStateText,
+  enemyPersonalityLabel,
 }: Props) {
   return (
     <>
@@ -79,7 +81,7 @@ export function BattleHud({
 
           <div className="min-w-0">
             <div className="mb-2 flex items-center justify-end gap-2 sm:gap-3">
-              <div className="text-xs text-zinc-400 sm:text-sm">압박형 상대</div>
+              <div className="text-xs text-zinc-400 sm:text-sm">{enemyPersonalityLabel}</div>
               <div className="border border-yellow-500/40 bg-yellow-950 px-2 py-1 text-[10px] font-black tracking-[0.2em] text-yellow-200 [clip-path:polygon(8%_0,100%_0,100%_100%,0_100%)] sm:text-xs">
                 ENEMY
               </div>
@@ -117,12 +119,20 @@ export function BattleHud({
           <div className="text-lg font-black sm:text-xl">{phaseTitle}</div>
         </div>
 
-        <div className={`border px-3 py-2 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] sm:px-4 sm:py-3 ${fighterStateClass(playerStateText)}`}>
+        <div
+          className={`border px-3 py-2 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] sm:px-4 sm:py-3 ${fighterStateClass(
+            playerStateText
+          )}`}
+        >
           <div className="mb-1 text-[10px] tracking-[0.2em] opacity-70 sm:text-xs">내 상태</div>
           <div className="text-sm font-black sm:text-lg">{playerStateText}</div>
         </div>
 
-        <div className={`border px-3 py-2 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)] sm:px-4 sm:py-3 ${fighterStateClass(enemyStateText)}`}>
+        <div
+          className={`border px-3 py-2 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)] sm:px-4 sm:py-3 ${fighterStateClass(
+            enemyStateText
+          )}`}
+        >
           <div className="mb-1 text-[10px] tracking-[0.2em] opacity-70 sm:text-xs">상대 상태</div>
           <div className="text-sm font-black sm:text-lg">{enemyStateText}</div>
         </div>

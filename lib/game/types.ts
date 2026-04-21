@@ -33,6 +33,8 @@ export type CardTag =
   | "거리조절"
   | "접근";
 
+export type OpponentPersonality = "balanced" | "defensive" | "aggressive";
+
 export type CardDefinition = {
   id: string;
   phase: PhaseId;
@@ -44,15 +46,7 @@ export type CardDefinition = {
   resultTags: ResultTag[];
   color: "red" | "orange" | "gold" | "blue" | "gray";
   groupLabel: string;
-};
-
-export type GameHistoryItem = {
-  turn: number;
-  phase: PhaseId;
-  playerCardTitle: string;
-  enemyCardTitle: string;
-  resultMessage: string;
-  nextPhase: PhaseId;
+  baseWeight: number;
 };
 
 export type GameState = {
@@ -60,7 +54,8 @@ export type GameState = {
   enemyHp: number;
   playerTension: number;
   enemyTension: number;
-  distance: number;
+  playerTile: number;
+  enemyTile: number;
   phase: PhaseId;
   playerRoleInPhase: PlayerRoleInPhase;
   playerStateText: string;
@@ -70,9 +65,9 @@ export type GameState = {
   turn: number;
   round: number;
   effectText: string;
+  enemyPersonality: OpponentPersonality;
   lastPlayerCardId: string | null;
   lastEnemyCardId: string | null;
-  history: GameHistoryItem[];
 };
 
 export type PhaseBannerState = {
@@ -92,7 +87,8 @@ export type ResolutionResult = {
   nextEnemyHp: number;
   nextPlayerTension: number;
   nextEnemyTension: number;
-  nextDistance: number;
+  nextPlayerTile: number;
+  nextEnemyTile: number;
   nextPhase: PhaseId;
   nextPlayerRoleInPhase: PlayerRoleInPhase;
   nextPlayerStateText: string;
@@ -100,4 +96,11 @@ export type ResolutionResult = {
   message: string;
   commentary: string;
   effectText?: string;
+};
+
+export type WeightedPickArgs = {
+  cards: CardDefinition[];
+  state: GameState;
+  role: PlayerRoleInPhase;
+  personality: OpponentPersonality;
 };

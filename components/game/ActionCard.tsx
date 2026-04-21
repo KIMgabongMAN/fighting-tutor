@@ -19,7 +19,7 @@ export function ActionCard({ card, onSelect }: Props) {
   return (
     <button
       onClick={() => onSelect(card)}
-      className={`group w-[260px] shrink-0 border bg-gradient-to-b ${toneClass} p-4 text-left transition hover:-translate-y-1 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] sm:w-[290px] sm:p-5`}
+      className={`group w-[260px] shrink-0 border bg-gradient-to-b ${toneClass} p-4 text-left transition hover:-translate-y-1 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] sm:w-[300px] sm:p-5`}
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -44,7 +44,7 @@ export function ActionCard({ card, onSelect }: Props) {
         ))}
       </div>
 
-      <div className="mb-4 min-h-[110px] text-sm leading-6 text-zinc-200">{card.description}</div>
+      <div className="mb-4 min-h-[132px] text-sm leading-6 text-zinc-200">{card.description}</div>
 
       <div className="mb-2 text-xs font-black tracking-[0.2em] text-zinc-400">결과 태그</div>
 

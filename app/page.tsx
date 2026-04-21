@@ -7,23 +7,21 @@ import { BattleHud } from "@/components/game/BattleHud";
 import { CommentaryBox } from "@/components/game/CommentaryBox";
 import { PhaseBanner } from "@/components/game/PhaseBanner";
 import { PHASE_META, getCardsForPhase } from "@/lib/game/data";
-import { pickRandomCard } from "@/lib/game/random";
-import {
-  deriveDistanceLabel,
-  deriveDistanceNeutralPhase,
-  resolvePhaseTurn,
-} from "@/lib/game/phase";
+import { resolvePhaseTurn, deriveDistanceLabel, deriveNeutralPhaseFromTiles } from "@/lib/game/phase";
+import { pickWeightedRandomCard } from "@/lib/game/random";
 import type {
   CardDefinition,
   GameContext,
   GameState,
+  OpponentPersonality,
   PhaseBannerState,
   PhaseId,
   PlayerRoleInPhase,
-  ResolutionResult,
 } from "@/lib/game/types";
 
-const INITIAL_DISTANCE = 2;
+const INITIAL_PLAYER_TILE = 1;
+const INITIAL_ENEMY_TILE = 4;
+const ENEMY_PERSONALITY: OpponentPersonality = "defensive";
 
 export default function Page() {
   const [state, setState] = useState<GameState>({
@@ -31,19 +29,21 @@ export default function Page() {
     enemyHp: 100,
     playerTension: 0,
     enemyTension: 0,
-    distance: INITIAL_DISTANCE,
+    playerTile: INITIAL_PLAYER_TILE,
+    enemyTile: INITIAL_ENEMY_TILE,
     phase: "opening",
     playerRoleInPhase: "neutral",
     playerStateText: "뉴트럴",
     enemyStateText: "뉴트럴",
-    message: "개막 상황이다. 신중히 첫 선택을 골라 이후의 흐름을 정하자.",
-    commentary: "현재 국면에 맞는 카드만 아래에 표시된다. 상대는 보이지 않게 랜덤으로 선택한다.",
+    message: "개막 상황이다. 신중히 첫 선택을 골라 이후 흐름을 정하자.",
+    commentary:
+      "현재 국면에 따라 네 카드만 아래에 표시된다. 상대는 보이지 않게 자기 카드 풀 안에서 가중치 랜덤으로 선택한다.",
     turn: 1,
     round: 1,
     effectText: "",
+    enemyPersonality: ENEMY_PERSONALITY,
     lastPlayerCardId: null,
     lastEnemyCardId: null,
-    history: [],
   });
 
   const [banner, setBanner] = useState<PhaseBannerState | null>(null);
@@ -53,11 +53,11 @@ export default function Page() {
     return getCardsForPhase(state.phase, state.playerRoleInPhase);
   }, [state.phase, state.playerRoleInPhase]);
 
-  const phaseTitle = useMemo(() => {
-    return PHASE_META[state.phase]?.label ?? "국면";
-  }, [state.phase]);
+  const phaseTitle = useMemo(() => PHASE_META[state.phase]?.label ?? "국면", [state.phase]);
 
-  const distanceLabel = useMemo(() => deriveDistanceLabel(state.distance), [state.distance]);
+  const distanceLabel = useMemo(() => {
+    return deriveDistanceLabel(state.playerTile, state.enemyTile);
+  }, [state.playerTile, state.enemyTile]);
 
   const showBanner = (phase: PhaseId) => {
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
@@ -81,59 +81,49 @@ export default function Page() {
     };
   }, []);
 
-  const moveToNextPhase = (result: ResolutionResult, playerCard: CardDefinition, enemyCard: CardDefinition) => {
-    setState((prev) => {
-      const nextPhase =
-        result.nextPhase ??
-        deriveDistanceNeutralPhase(result.nextDistance ?? prev.distance);
-
-      return {
-        ...prev,
-        playerHp: result.nextPlayerHp,
-        enemyHp: result.nextEnemyHp,
-        playerTension: result.nextPlayerTension,
-        enemyTension: result.nextEnemyTension,
-        distance: result.nextDistance,
-        phase: nextPhase,
-        playerRoleInPhase: result.nextPlayerRoleInPhase,
-        playerStateText: result.nextPlayerStateText,
-        enemyStateText: result.nextEnemyStateText,
-        message: result.message,
-        commentary: result.commentary,
-        turn: prev.turn + 1,
-        effectText: result.effectText ?? "",
-        lastPlayerCardId: playerCard.id,
-        lastEnemyCardId: enemyCard.id,
-        history: [
-          ...prev.history,
-          {
-            turn: prev.turn,
-            phase: prev.phase,
-            playerCardTitle: playerCard.title,
-            enemyCardTitle: enemyCard.title,
-            resultMessage: result.message,
-            nextPhase,
-          },
-        ],
-      };
+  const handleReset = () => {
+    setState({
+      playerHp: 100,
+      enemyHp: 100,
+      playerTension: 0,
+      enemyTension: 0,
+      playerTile: INITIAL_PLAYER_TILE,
+      enemyTile: INITIAL_ENEMY_TILE,
+      phase: "opening",
+      playerRoleInPhase: "neutral",
+      playerStateText: "뉴트럴",
+      enemyStateText: "뉴트럴",
+      message: "개막 상황이다. 신중히 첫 선택을 골라 이후 흐름을 정하자.",
+      commentary:
+        "현재 국면에 따라 네 카드만 아래에 표시된다. 상대는 보이지 않게 자기 카드 풀 안에서 가중치 랜덤으로 선택한다.",
+      turn: 1,
+      round: 1,
+      effectText: "",
+      enemyPersonality: ENEMY_PERSONALITY,
+      lastPlayerCardId: null,
+      lastEnemyCardId: null,
     });
 
-    showBanner(result.nextPhase ?? deriveDistanceNeutralPhase(result.nextDistance ?? state.distance));
+    showBanner("opening");
   };
+
+  const enemyRole: PlayerRoleInPhase = useMemo(() => {
+    if (state.playerRoleInPhase === "attacker") return "defender";
+    if (state.playerRoleInPhase === "defender") return "attacker";
+    return "neutral";
+  }, [state.playerRoleInPhase]);
 
   const handleSelectCard = (playerCard: CardDefinition) => {
     if (state.playerHp <= 0 || state.enemyHp <= 0) return;
 
-    const enemyCards = getCardsForPhase(
-      state.phase,
-      state.playerRoleInPhase === "attacker"
-        ? "defender"
-        : state.playerRoleInPhase === "defender"
-        ? "attacker"
-        : "neutral"
-    );
+    const enemyCards = getCardsForPhase(state.phase, enemyRole);
 
-    const enemyCard = pickRandomCard(enemyCards);
+    const enemyCard = pickWeightedRandomCard({
+      cards: enemyCards,
+      state,
+      role: enemyRole,
+      personality: state.enemyPersonality,
+    });
 
     const context: GameContext = {
       currentState: state,
@@ -143,31 +133,27 @@ export default function Page() {
 
     const result = resolvePhaseTurn(context);
 
-    moveToNextPhase(result, playerCard, enemyCard);
-  };
+    setState((prev) => ({
+      ...prev,
+      playerHp: result.nextPlayerHp,
+      enemyHp: result.nextEnemyHp,
+      playerTension: result.nextPlayerTension,
+      enemyTension: result.nextEnemyTension,
+      playerTile: result.nextPlayerTile,
+      enemyTile: result.nextEnemyTile,
+      phase: result.nextPhase,
+      playerRoleInPhase: result.nextPlayerRoleInPhase,
+      playerStateText: result.nextPlayerStateText,
+      enemyStateText: result.nextEnemyStateText,
+      message: result.message,
+      commentary: result.commentary,
+      effectText: result.effectText ?? "",
+      turn: prev.turn + 1,
+      lastPlayerCardId: playerCard.id,
+      lastEnemyCardId: enemyCard.id,
+    }));
 
-  const handleReset = () => {
-    setState({
-      playerHp: 100,
-      enemyHp: 100,
-      playerTension: 0,
-      enemyTension: 0,
-      distance: INITIAL_DISTANCE,
-      phase: "opening",
-      playerRoleInPhase: "neutral",
-      playerStateText: "뉴트럴",
-      enemyStateText: "뉴트럴",
-      message: "개막 상황이다. 신중히 첫 선택을 골라 이후의 흐름을 정하자.",
-      commentary: "현재 국면에 맞는 카드만 아래에 표시된다. 상대는 보이지 않게 랜덤으로 선택한다.",
-      turn: 1,
-      round: 1,
-      effectText: "",
-      lastPlayerCardId: null,
-      lastEnemyCardId: null,
-      history: [],
-    });
-
-    showBanner("opening");
+    showBanner(result.nextPhase);
   };
 
   const selectionTitle = useMemo(() => {
@@ -178,14 +164,14 @@ export default function Page() {
 
   const selectionDescription = useMemo(() => {
     if (state.playerRoleInPhase === "attacker") {
-      return "이번 국면에서는 네가 주도권을 잡았다. 공격자 카드만 표시된다.";
+      return "이번 국면에서 네가 먼저 유리한 흐름을 잡았다. 공격자 카드만 표시된다.";
     }
 
     if (state.playerRoleInPhase === "defender") {
-      return "이번 국면에서는 네가 수세에 있다. 수비자 카드만 표시된다.";
+      return "이번 국면에서 네가 수세에 있다. 수비자 카드만 표시된다.";
     }
 
-    return "개막과 일반 교전에서는 중립 선택지를 사용한다.";
+    return "개막과 일반 교전에서는 중립 카드로 먼저 승부를 만든다.";
   }, [state.playerRoleInPhase]);
 
   const isGameOver = state.playerHp <= 0 || state.enemyHp <= 0;
@@ -248,14 +234,16 @@ export default function Page() {
                 phaseTitle={phaseTitle}
                 playerStateText={state.playerStateText}
                 enemyStateText={state.enemyStateText}
+                enemyPersonalityLabel={state.enemyPersonality === "defensive" ? "수비형 상대" : "균형형 상대"}
               />
 
               <div className="flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
                 <BattleField
                   message={state.message}
                   phaseTitle={phaseTitle}
-                  distance={state.distance}
                   playerRoleInPhase={state.playerRoleInPhase}
+                  playerTile={state.playerTile}
+                  enemyTile={state.enemyTile}
                   effectText={state.effectText}
                 />
 
