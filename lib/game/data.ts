@@ -5,6 +5,8 @@ import type {
   PlayerRoleInPhase,
 } from "@/lib/game/types";
 
+export const TILE_COUNT = 7;
+
 export const PHASE_META: Record<
   PhaseId,
   {
@@ -20,6 +22,26 @@ export const PHASE_META: Record<
   guard: { label: "가드 상황", tone: "neutral" },
   hardDown: { label: "하드 다운", tone: "danger" },
   combo: { label: "콤보 상황", tone: "advantage" },
+};
+
+export const FORCED_VULNERABLE_CARD: CardDefinition = {
+  id: "forced_vulnerable",
+  phase: "universal",
+  role: "universal",
+  order: "X",
+  title: "무방비",
+  description: "후딜이 길게 남아 아무 행동도 하지 못한다.",
+  tags: [],
+  color: "gray",
+  groupLabel: "강제",
+  baseWeight: 0,
+  attackPower: 0,
+  grabDamage: 0,
+  advance: 0,
+  push: 0,
+  successOutcome: "neutralByDistance",
+  rangeMin: -1,
+  rangeMax: -1,
 };
 
 export const UNIVERSAL_BURST_CARD: CardDefinition = {
@@ -39,6 +61,8 @@ export const UNIVERSAL_BURST_CARD: CardDefinition = {
   advance: 0,
   push: 3,
   successOutcome: "neutralByDistance",
+  rangeMin: -1,
+  rangeMax: -1,
 };
 
 const OPENING_NEUTRAL: CardDefinition[] = [
@@ -59,6 +83,8 @@ const OPENING_NEUTRAL: CardDefinition[] = [
     advance: 2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "neutral_poke_opening",
@@ -76,6 +102,8 @@ const OPENING_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 1,
+    rangeMax: 3,
   },
   {
     id: "neutral_block_opening",
@@ -93,6 +121,8 @@ const OPENING_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "neutral_evade_opening",
@@ -110,6 +140,8 @@ const OPENING_NEUTRAL: CardDefinition[] = [
     advance: -2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
 ];
 
@@ -121,7 +153,7 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     order: "01",
     title: "지상 대쉬 접근",
     description:
-      "근거리에서 한 걸음 더 파고들어 잡기/근접 압박 각을 만든다. 이미 가까운 상황이라 리턴이 높다.",
+      "근거리에서 한 걸음 더 파고들어 잡기/근접 압박 각을 만든다.",
     tags: ["뉴트럴", "대쉬", "지상", "딜레이"],
     color: "red",
     groupLabel: "교전",
@@ -131,6 +163,8 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     advance: 1,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "close_scrap",
@@ -138,7 +172,7 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "02",
     title: "근접 승부",
-    description: "근거리 기본기로 우선권 싸움을 건다. 영거리에서 가장 직관적인 선택지다.",
+    description: "근거리 기본기로 우선권 싸움을 건다.",
     tags: ["뉴트럴", "지상", "근거리 공격"],
     color: "red",
     groupLabel: "교전",
@@ -148,6 +182,8 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "close_poke",
@@ -155,7 +191,7 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "03",
     title: "견제",
-    description: "한 박자 길게 내밀어 앞 움직임을 억제한다. 가까워도 여전히 유효하다.",
+    description: "한 박자 길게 내밀어 앞 움직임을 억제한다.",
     tags: ["뉴트럴", "지상", "중거리 공격"],
     color: "orange",
     groupLabel: "교전",
@@ -165,6 +201,8 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 1,
+    rangeMax: 3,
   },
   {
     id: "close_throw",
@@ -172,7 +210,7 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "04",
     title: "영거리 잡기",
-    description: "최종 거리 0의 초근접 특수 선택지. 공격 포함 태그와 수비를 대부분 먼저 잡아낸다.",
+    description: "최종 거리 0의 초근접 특수 선택지다.",
     tags: ["선공", "지상", "잡기"],
     color: "gold",
     groupLabel: "교전",
@@ -182,6 +220,8 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "hardDown",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "close_block",
@@ -189,7 +229,7 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "05",
     title: "방어",
-    description: "상대의 근거리 시도를 안전하게 받아낸다. 성공 시 흐름을 잠시 끊는다.",
+    description: "상대의 근거리 시도를 안전하게 받아낸다.",
     tags: ["뉴트럴", "수비", "지상"],
     color: "blue",
     groupLabel: "교전",
@@ -199,6 +239,8 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "close_escape",
@@ -216,6 +258,8 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     advance: -2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "close_reversal",
@@ -223,7 +267,7 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "07",
     title: "승부수",
-    description: "무적기를 지른다. 성공하면 흐름을 강제로 리셋하지만, 실패 리스크도 크다.",
+    description: "무적기를 지른다. 리치가 닿지 않으면 크게 빈다.",
     tags: ["무적", "지상", "근거리 공격", "캔슬불가"],
     color: "gray",
     groupLabel: "교전",
@@ -233,6 +277,8 @@ const CLOSE_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: 0,
+    rangeMax: 2,
   },
 ];
 
@@ -243,8 +289,7 @@ const MID_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "01",
     title: "지상 대쉬 접근",
-    description:
-      "중거리에서 가장 기본적인 접근. 점프보다 안정적으로 근거리 진입을 노릴 수 있다.",
+    description: "중거리에서 가장 기본적인 접근.",
     tags: ["뉴트럴", "대쉬", "지상", "딜레이"],
     color: "red",
     groupLabel: "교전",
@@ -254,6 +299,8 @@ const MID_NEUTRAL: CardDefinition[] = [
     advance: 2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "mid_poke",
@@ -261,7 +308,7 @@ const MID_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "02",
     title: "견제",
-    description: "중거리에서 가장 표준적인 버튼. 상대 전진과 무리한 이동을 자주 끊는다.",
+    description: "중거리에서 가장 표준적인 버튼.",
     tags: ["뉴트럴", "지상", "중거리 공격"],
     color: "orange",
     groupLabel: "교전",
@@ -271,6 +318,8 @@ const MID_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 1,
+    rangeMax: 3,
   },
   {
     id: "mid_long",
@@ -278,7 +327,7 @@ const MID_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "03",
     title: "장거리 견제",
-    description: "더 먼 거리까지 닿는 길쭉한 선택지다. 리턴은 낮지만 범위가 넓다.",
+    description: "더 먼 거리까지 닿는 길쭉한 선택지다.",
     tags: ["뉴트럴", "지상", "원거리 공격"],
     color: "gold",
     groupLabel: "교전",
@@ -288,6 +337,8 @@ const MID_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 4,
+    rangeMax: 6,
   },
   {
     id: "mid_block",
@@ -305,6 +356,8 @@ const MID_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "mid_escape",
@@ -322,6 +375,28 @@ const MID_NEUTRAL: CardDefinition[] = [
     advance: -2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
+  },
+  {
+    id: "mid_reversal",
+    phase: "midNeutral",
+    role: "neutral",
+    order: "06",
+    title: "승부수",
+    description:
+      "중거리에서 지르는 무적기. 상대 중거리 공격엔 닿을 수 있지만, 리치가 짧은 견제엔 헛칠 수 있다.",
+    tags: ["무적", "지상", "근거리 공격", "캔슬불가"],
+    color: "gray",
+    groupLabel: "교전",
+    baseWeight: 6,
+    attackPower: 18,
+    grabDamage: 0,
+    advance: 0,
+    push: 1,
+    successOutcome: "neutralByDistance",
+    rangeMin: 0,
+    rangeMax: 2,
   },
 ];
 
@@ -333,7 +408,7 @@ const FAR_NEUTRAL: CardDefinition[] = [
     order: "01",
     title: "지상 대쉬 접근",
     description:
-      "원거리에서 답답함을 풀어주는 직선 접근. 시간을 끌기보다 다음 국면을 강제로 당긴다.",
+      "원거리에서 답답함을 풀어주는 직선 접근.",
     tags: ["뉴트럴", "대쉬", "지상", "딜레이"],
     color: "red",
     groupLabel: "교전",
@@ -343,6 +418,8 @@ const FAR_NEUTRAL: CardDefinition[] = [
     advance: 2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "far_long",
@@ -350,7 +427,7 @@ const FAR_NEUTRAL: CardDefinition[] = [
     role: "neutral",
     order: "02",
     title: "장거리 견제",
-    description: "멀리서 상대 접근을 끊는다. 리턴보다 라인 관리가 목적이다.",
+    description: "멀리서 상대 접근을 끊는다.",
     tags: ["뉴트럴", "지상", "원거리 공격"],
     color: "orange",
     groupLabel: "교전",
@@ -360,6 +437,8 @@ const FAR_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 4,
+    rangeMax: 6,
   },
   {
     id: "far_block",
@@ -377,6 +456,8 @@ const FAR_NEUTRAL: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "far_escape",
@@ -394,6 +475,8 @@ const FAR_NEUTRAL: CardDefinition[] = [
     advance: -2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
 ];
 
@@ -404,7 +487,7 @@ const PRESSURE_ATTACKER: CardDefinition[] = [
     role: "attacker",
     order: "01",
     title: "연속 압박",
-    description: "기본기와 연속 개틀링으로 상대를 계속 묶는다. 가장 표준적인 유지 선택지다.",
+    description: "가장 표준적인 유지 선택지다.",
     tags: ["지상", "근거리 공격"],
     color: "red",
     groupLabel: "공격자",
@@ -414,6 +497,8 @@ const PRESSURE_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "pressure_frame",
@@ -421,7 +506,7 @@ const PRESSURE_ATTACKER: CardDefinition[] = [
     role: "attacker",
     order: "02",
     title: "프레임 트랩",
-    description: "딜레이를 섞어 반항을 노리는 카드다. 맞으면 큰 리턴으로 이어진다.",
+    description: "딜레이를 섞어 반항을 노리는 카드다.",
     tags: ["지상", "딜레이", "근거리 공격", "콤보"],
     color: "orange",
     groupLabel: "공격자",
@@ -431,6 +516,8 @@ const PRESSURE_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "combo",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "pressure_throw",
@@ -438,7 +525,7 @@ const PRESSURE_ATTACKER: CardDefinition[] = [
     role: "attacker",
     order: "03",
     title: "잡기",
-    description: "수비 굳히기를 깨는 영거리 잡기다. 최종 거리 0에서만 진짜 위협이 된다.",
+    description: "수비 굳히기를 깨는 영거리 잡기다.",
     tags: ["선공", "지상", "잡기"],
     color: "gold",
     groupLabel: "공격자",
@@ -448,6 +535,8 @@ const PRESSURE_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "hardDown",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "pressure_mix",
@@ -465,6 +554,8 @@ const PRESSURE_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 0,
+    rangeMax: 0,
   },
 ];
 
@@ -475,7 +566,7 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     role: "defender",
     order: "01",
     title: "가드",
-    description: "가장 안정적인 선택. 성공하면 상대를 밀어내며 흐름을 잠시 끊는다.",
+    description: "가장 안정적인 선택.",
     tags: ["수비", "지상"],
     color: "blue",
     groupLabel: "수비자",
@@ -485,6 +576,8 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "defend_abare",
@@ -492,7 +585,7 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     role: "defender",
     order: "02",
     title: "반항",
-    description: "틈을 보고 버튼을 누른다. 맞으면 흐름을 되찾지만 프레임 트랩엔 크게 당한다.",
+    description: "틈을 보고 버튼을 누른다.",
     tags: ["지상", "딜레이", "근거리 공격"],
     color: "red",
     groupLabel: "수비자",
@@ -502,6 +595,8 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "defend_escape",
@@ -519,6 +614,8 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     advance: -2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "defend_throw",
@@ -526,7 +623,7 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     role: "defender",
     order: "04",
     title: "잡기",
-    description: "근거리 압박에서만 통하는 특수 반응. 최종 거리 0에서 성립한다.",
+    description: "근거리 압박에서만 통하는 특수 반응.",
     tags: ["선공", "지상", "잡기"],
     color: "gold",
     groupLabel: "수비자",
@@ -536,6 +633,8 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "hardDown",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "defend_reversal",
@@ -543,7 +642,7 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     role: "defender",
     order: "05",
     title: "승부수",
-    description: "무적기로 압박을 뒤집는다. 가장 강하지만 가장 위험하다.",
+    description: "무적기로 압박을 뒤집는다.",
     tags: ["무적", "지상", "근거리 공격", "캔슬불가"],
     color: "gray",
     groupLabel: "수비자",
@@ -553,6 +652,8 @@ const PRESSURE_DEFENDER: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: 0,
+    rangeMax: 2,
   },
 ];
 
@@ -573,6 +674,8 @@ const HARDDOWN_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "okizeme_wait",
@@ -590,6 +693,8 @@ const HARDDOWN_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "okizeme_loop",
@@ -607,6 +712,8 @@ const HARDDOWN_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 0,
+    rangeMax: 0,
   },
 ];
 
@@ -627,6 +734,8 @@ const HARDDOWN_DEFENDER: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "wake_escape",
@@ -644,6 +753,8 @@ const HARDDOWN_DEFENDER: CardDefinition[] = [
     advance: -2,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: -1,
+    rangeMax: -1,
   },
   {
     id: "wake_reversal",
@@ -661,6 +772,27 @@ const HARDDOWN_DEFENDER: CardDefinition[] = [
     advance: 0,
     push: 1,
     successOutcome: "neutralByDistance",
+    rangeMin: 0,
+    rangeMax: 2,
+  },
+  {
+    id: "wake_throw",
+    phase: "hardDown",
+    role: "defender",
+    order: "04",
+    title: "기상 잡기",
+    description: "기상 직후 영거리 잡기를 노린다. 실패 시 큰 빈틈이 남는다.",
+    tags: ["선공", "지상", "잡기"],
+    color: "gold",
+    groupLabel: "수비자",
+    baseWeight: 5,
+    attackPower: 0,
+    grabDamage: 14,
+    advance: 0,
+    push: 0,
+    successOutcome: "hardDown",
+    rangeMin: 0,
+    rangeMax: 0,
   },
 ];
 
@@ -671,7 +803,7 @@ const COMBO_ATTACKER: CardDefinition[] = [
     role: "attacker",
     order: "01",
     title: "최대 데미지",
-    description: "당장 가장 큰 피해를 우선한다. 세 번쯤 맞으면 라운드가 끝날 수준의 화력이다.",
+    description: "당장 가장 큰 피해를 우선한다.",
     tags: ["지상", "근거리 공격", "콤보"],
     color: "red",
     groupLabel: "공격자",
@@ -681,6 +813,8 @@ const COMBO_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "neutralByDistance",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "combo_down",
@@ -688,7 +822,7 @@ const COMBO_ATTACKER: CardDefinition[] = [
     role: "attacker",
     order: "02",
     title: "다운 마무리",
-    description: "화력은 조금 줄이는 대신 하드 다운과 기상 심리로 이어간다.",
+    description: "화력은 조금 줄이는 대신 하드 다운으로 이어간다.",
     tags: ["지상", "근거리 공격", "다운"],
     color: "orange",
     groupLabel: "공격자",
@@ -698,6 +832,8 @@ const COMBO_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "hardDown",
+    rangeMin: 0,
+    rangeMax: 0,
   },
   {
     id: "combo_reset",
@@ -715,6 +851,8 @@ const COMBO_ATTACKER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "pressure",
+    rangeMin: 0,
+    rangeMax: 0,
   },
 ];
 
@@ -725,7 +863,7 @@ const COMBO_DEFENDER: CardDefinition[] = [
     role: "defender",
     order: "01",
     title: "버티기",
-    description: "자원을 아끼고 피해를 감수한다. 별도 반전은 없다.",
+    description: "자원을 아끼고 피해를 감수한다.",
     tags: ["수비"],
     color: "blue",
     groupLabel: "수비자",
@@ -735,6 +873,8 @@ const COMBO_DEFENDER: CardDefinition[] = [
     advance: 0,
     push: 0,
     successOutcome: "samePhase",
+    rangeMin: -1,
+    rangeMax: -1,
   },
 ];
 

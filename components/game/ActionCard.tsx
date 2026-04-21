@@ -17,6 +17,10 @@ const toneClassMap: Record<string, string> = {
 
 export function ActionCard({ card, onSelect, disabled = false }: Props) {
   const toneClass = toneClassMap[card.color] ?? toneClassMap.gray;
+  const rangeText =
+    card.rangeMax < 0
+      ? "비타격"
+      : `${card.rangeMin}~${card.rangeMax}`;
 
   return (
     <button
@@ -68,6 +72,9 @@ export function ActionCard({ card, onSelect, disabled = false }: Props) {
         </div>
         <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
           밀어내기: {card.push > 0 ? `+${card.push}` : card.push}
+        </div>
+        <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1 col-span-2">
+          유효 거리: {rangeText}
         </div>
       </div>
     </button>

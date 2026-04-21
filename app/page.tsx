@@ -9,7 +9,9 @@ import { DuelOverlay } from "@/components/game/DuelOverlay";
 import { PhaseBanner } from "@/components/game/PhaseBanner";
 import { ReviewScreen } from "@/components/game/ReviewScreen";
 import {
+  FORCED_VULNERABLE_CARD,
   PHASE_META,
+  TILE_COUNT,
   UNIVERSAL_BURST_CARD,
   getCardsForPhase,
 } from "@/lib/game/data";
@@ -29,7 +31,7 @@ import type {
 } from "@/lib/game/types";
 
 const INITIAL_PLAYER_TILE = 1;
-const INITIAL_ENEMY_TILE = 4;
+const INITIAL_ENEMY_TILE = 5;
 const ENEMY_PERSONALITY: OpponentPersonality = "defensive";
 const DUEL_ANIMATION_MS = 4800;
 
@@ -79,7 +81,7 @@ export default function Page() {
     enemyStateText: "뉴트럴",
     message: "개막이다. 의도를 고르고, 거리와 국면의 흐름을 먼저 잡아라.",
     commentary:
-      "v2는 세부 조작 대신 의도 카드 중심으로 진행된다. 상대도 같은 방식으로 카드를 고른다.",
+      "1x7 필드 기준으로 거리와 리치를 먼저 계산한다. 잡기와 무적기는 실패하면 무방비 상태가 된다.",
     turn: 1,
     round: 1,
     effectText: "",
@@ -88,6 +90,8 @@ export default function Page() {
     lastEnemyCardId: null,
     playerBurstUsed: false,
     enemyBurstUsed: false,
+    playerVulnerable: false,
+    enemyVulnerable: false,
   });
 
   const [history, setHistory] = useState<TurnRecord[]>([]);
@@ -98,12 +102,13 @@ export default function Page() {
   const duelApplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentCards = useMemo(() => {
+    if (state.playerVulnerable) return [];
     return buildCardPool(
       state.phase,
       state.playerRoleInPhase,
       !state.playerBurstUsed
     );
-  }, [state.phase, state.playerRoleInPhase, state.playerBurstUsed]);
+  }, [state.phase, state.playerRoleInPhase, state.playerBurstUsed, state.playerVulnerable]);
 
   const phaseTitle = useMemo(
     () => PHASE_META[state.phase]?.label ?? "국면",
@@ -178,6 +183,8 @@ export default function Page() {
         prev.playerBurstUsed || playerCard.id === UNIVERSAL_BURST_CARD.id,
       enemyBurstUsed:
         prev.enemyBurstUsed || enemyCard.id === UNIVERSAL_BURST_CARD.id,
+      playerVulnerable: result.nextPlayerVulnerable,
+      enemyVulnerable: result.nextEnemyVulnerable,
     }));
 
     setDuelOverlay(null);
@@ -188,22 +195,7 @@ export default function Page() {
     }
   };
 
-  const handleSelectCard = (playerCard: CardDefinition) => {
-    if (isGameOver || isDuelPlaying) return;
-
-    const enemyCards = buildCardPool(
-      state.phase,
-      enemyRole,
-      !state.enemyBurstUsed
-    );
-
-    const enemyCard = pickWeightedRandomCard({
-      cards: enemyCards,
-      state,
-      role: enemyRole,
-      personality: state.enemyPersonality,
-    });
-
+  const startResolution = (playerCard: CardDefinition, enemyCard: CardDefinition) => {
     const context: GameContext = {
       currentState: state,
       playerCard,
@@ -223,6 +215,36 @@ export default function Page() {
     duelApplyTimerRef.current = setTimeout(() => {
       applyResolvedResult(result, playerCard, enemyCard);
     }, DUEL_ANIMATION_MS);
+  };
+
+  const handleSelectCard = (playerCard: CardDefinition) => {
+    if (isGameOver || isDuelPlaying || state.playerVulnerable) return;
+
+    const enemyCard = state.enemyVulnerable
+      ? FORCED_VULNERABLE_CARD
+      : pickWeightedRandomCard({
+          cards: buildCardPool(state.phase, enemyRole, !state.enemyBurstUsed),
+          state,
+          role: enemyRole,
+          personality: state.enemyPersonality,
+        });
+
+    startResolution(playerCard, enemyCard);
+  };
+
+  const handleAdvanceVulnerableTurn = () => {
+    if (isGameOver || isDuelPlaying || !state.playerVulnerable) return;
+
+    const enemyCard = state.enemyVulnerable
+      ? FORCED_VULNERABLE_CARD
+      : pickWeightedRandomCard({
+          cards: buildCardPool(state.phase, enemyRole, !state.enemyBurstUsed),
+          state,
+          role: enemyRole,
+          personality: state.enemyPersonality,
+        });
+
+    startResolution(FORCED_VULNERABLE_CARD, enemyCard);
   };
 
   const handleReset = () => {
@@ -245,7 +267,7 @@ export default function Page() {
       enemyStateText: "뉴트럴",
       message: "개막이다. 의도를 고르고, 거리와 국면의 흐름을 먼저 잡아라.",
       commentary:
-        "v2는 세부 조작 대신 의도 카드 중심으로 진행된다. 상대도 같은 방식으로 카드를 고른다.",
+        "1x7 필드 기준으로 거리와 리치를 먼저 계산한다. 잡기와 무적기는 실패하면 무방비 상태가 된다.",
       turn: 1,
       round: 1,
       effectText: "",
@@ -254,28 +276,32 @@ export default function Page() {
       lastEnemyCardId: null,
       playerBurstUsed: false,
       enemyBurstUsed: false,
+      playerVulnerable: false,
+      enemyVulnerable: false,
     });
 
     showBanner("opening");
   };
 
   const selectionTitle = useMemo(() => {
+    if (state.playerVulnerable) return "무방비 상태";
     if (state.playerRoleInPhase === "attacker") return "공격자 선택지";
     if (state.playerRoleInPhase === "defender") return "수비자 선택지";
     return "뉴트럴 선택지";
-  }, [state.playerRoleInPhase]);
+  }, [state.playerRoleInPhase, state.playerVulnerable]);
 
   const selectionDescription = useMemo(() => {
+    if (state.playerVulnerable) {
+      return "잡기/무적기 실패 후 딜레이가 길게 남았다. 이번 턴은 제대로 행동할 수 없다.";
+    }
     if (state.playerRoleInPhase === "attacker") {
       return "지금은 네가 흐름을 쥐고 있다. 압박의 방향을 고르자.";
     }
-
     if (state.playerRoleInPhase === "defender") {
       return "지금은 수세다. 버틸지, 탈출할지, 뒤집을지 고르자.";
     }
-
-    return "세부 행동이 아니라 의도를 선택한다. 거리 변화는 먼저 반영되고, 그 후 승패를 판정한다.";
-  }, [state.playerRoleInPhase]);
+    return "세부 행동이 아니라 의도를 선택한다. 이동 후 거리와 리치로 먼저 판정한다.";
+  }, [state.playerRoleInPhase, state.playerVulnerable]);
 
   return (
     <>
@@ -309,7 +335,7 @@ export default function Page() {
         <div className="mx-auto w-full max-w-[1700px]">
           <div className="mb-3 flex items-center justify-between sm:mb-4">
             <div className="text-[10px] font-black tracking-[0.28em] text-zinc-500 sm:text-xs">
-              TRAINING BUILD V2
+              TRAINING BUILD V2 · {TILE_COUNT} TILE
             </div>
 
             <button
@@ -351,6 +377,8 @@ export default function Page() {
                   }
                   playerBurstUsed={state.playerBurstUsed}
                   enemyBurstUsed={state.enemyBurstUsed}
+                  playerVulnerable={state.playerVulnerable}
+                  enemyVulnerable={state.enemyVulnerable}
                 />
 
                 <div className="relative z-20 flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
@@ -365,13 +393,32 @@ export default function Page() {
 
                   <CommentaryBox commentary={state.commentary} />
 
-                  <ActionCardRow
-                    title={selectionTitle}
-                    description={selectionDescription}
-                    cards={currentCards}
-                    onSelect={handleSelectCard}
-                    disabled={isDuelPlaying}
-                  />
+                  {!state.playerVulnerable ? (
+                    <ActionCardRow
+                      title={selectionTitle}
+                      description={selectionDescription}
+                      cards={currentCards}
+                      onSelect={handleSelectCard}
+                      disabled={isDuelPlaying}
+                    />
+                  ) : (
+                    <div className="relative z-30 overflow-hidden border border-zinc-700 bg-zinc-950/80 shadow-lg">
+                      <div className="border-b border-zinc-800 bg-black/30 px-4 py-3 sm:px-5">
+                        <div className="mb-1 text-lg font-black text-red-100">{selectionTitle}</div>
+                        <div className="text-xs text-zinc-400 sm:text-sm">{selectionDescription}</div>
+                      </div>
+                      <div className="p-4">
+                        <button
+                          type="button"
+                          onClick={handleAdvanceVulnerableTurn}
+                          disabled={isDuelPlaying}
+                          className="rounded-md border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm font-black text-red-100 hover:border-red-300 disabled:opacity-40"
+                        >
+                          무방비 턴 진행
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

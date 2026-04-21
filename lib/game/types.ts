@@ -59,6 +59,8 @@ export type CardDefinition = {
   advance: number;
   push: number;
   successOutcome: SuccessOutcome;
+  rangeMin: number;
+  rangeMax: number;
 };
 
 export type GameState = {
@@ -82,6 +84,8 @@ export type GameState = {
   lastEnemyCardId: string | null;
   playerBurstUsed: boolean;
   enemyBurstUsed: boolean;
+  playerVulnerable: boolean;
+  enemyVulnerable: boolean;
 };
 
 export type TurnRecord = {
@@ -132,6 +136,8 @@ export type ResolutionResult = {
   commentary: string;
   effectText?: string;
   duelOutcome: DuelOutcome;
+  nextPlayerVulnerable: boolean;
+  nextEnemyVulnerable: boolean;
 };
 
 export type WeightedPickArgs = {

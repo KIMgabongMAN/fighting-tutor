@@ -11,6 +11,8 @@ type Props = {
   enemyPersonalityLabel: string;
   playerBurstUsed: boolean;
   enemyBurstUsed: boolean;
+  playerVulnerable: boolean;
+  enemyVulnerable: boolean;
 };
 
 function fighterStateClass(state: string) {
@@ -23,6 +25,8 @@ function fighterStateClass(state: string) {
       return "text-yellow-100 border-yellow-500/50 bg-yellow-950/50";
     case "콤보 상황":
       return "text-orange-100 border-orange-500/50 bg-orange-950/50";
+    case "무방비":
+      return "text-red-100 border-red-400/60 bg-red-950/70";
     default:
       return "text-zinc-100 border-zinc-600 bg-zinc-900/60";
   }
@@ -41,6 +45,8 @@ export function BattleHud({
   enemyPersonalityLabel,
   playerBurstUsed,
   enemyBurstUsed,
+  playerVulnerable,
+  enemyVulnerable,
 }: Props) {
   return (
     <>
@@ -112,7 +118,7 @@ export function BattleHud({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 px-3 pt-3 sm:grid-cols-6 sm:gap-3 sm:px-4 sm:pt-4">
+      <div className="grid grid-cols-2 gap-2 px-3 pt-3 sm:grid-cols-8 sm:gap-3 sm:px-4 sm:pt-4">
         <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3">
           <div className="mb-1 text-[10px] tracking-[0.2em] text-zinc-500 sm:text-xs">거리 판정</div>
           <div className="text-lg font-black sm:text-xl">{distanceLabel}</div>
@@ -123,14 +129,14 @@ export function BattleHud({
           <div className="text-lg font-black sm:text-xl">{phaseTitle}</div>
         </div>
 
-        <div className={`border px-3 py-2 sm:px-4 sm:py-3 ${fighterStateClass(playerStateText)}`}>
+        <div className={`border px-3 py-2 sm:px-4 sm:py-3 ${fighterStateClass(playerVulnerable ? "무방비" : playerStateText)}`}>
           <div className="mb-1 text-[10px] tracking-[0.2em] opacity-70 sm:text-xs">내 상태</div>
-          <div className="text-sm font-black sm:text-lg">{playerStateText}</div>
+          <div className="text-sm font-black sm:text-lg">{playerVulnerable ? "무방비" : playerStateText}</div>
         </div>
 
-        <div className={`border px-3 py-2 sm:px-4 sm:py-3 ${fighterStateClass(enemyStateText)}`}>
+        <div className={`border px-3 py-2 sm:px-4 sm:py-3 ${fighterStateClass(enemyVulnerable ? "무방비" : enemyStateText)}`}>
           <div className="mb-1 text-[10px] tracking-[0.2em] opacity-70 sm:text-xs">상대 상태</div>
-          <div className="text-sm font-black sm:text-lg">{enemyStateText}</div>
+          <div className="text-sm font-black sm:text-lg">{enemyVulnerable ? "무방비" : enemyStateText}</div>
         </div>
 
         <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3">
@@ -141,6 +147,16 @@ export function BattleHud({
         <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3">
           <div className="mb-1 text-[10px] tracking-[0.2em] text-zinc-500 sm:text-xs">상대 버스트</div>
           <div className="text-sm font-black sm:text-lg">{enemyBurstUsed ? "사용 완료" : "사용 가능"}</div>
+        </div>
+
+        <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3">
+          <div className="mb-1 text-[10px] tracking-[0.2em] text-zinc-500 sm:text-xs">내 경직</div>
+          <div className="text-sm font-black sm:text-lg">{playerVulnerable ? "후딜" : "정상"}</div>
+        </div>
+
+        <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3">
+          <div className="mb-1 text-[10px] tracking-[0.2em] text-zinc-500 sm:text-xs">상대 경직</div>
+          <div className="text-sm font-black sm:text-lg">{enemyVulnerable ? "후딜" : "정상"}</div>
         </div>
       </div>
     </>

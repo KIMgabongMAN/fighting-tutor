@@ -1,3 +1,4 @@
+import { TILE_COUNT } from "@/lib/game/data";
 import type { PlayerRoleInPhase } from "@/lib/game/types";
 
 type Props = {
@@ -10,7 +11,7 @@ type Props = {
 };
 
 function tileCenterPercent(tileIndex: number) {
-  return ((tileIndex + 0.5) / 6) * 100;
+  return ((tileIndex + 0.5) / TILE_COUNT) * 100;
 }
 
 export function BattleField({
@@ -34,7 +35,7 @@ export function BattleField({
         <div className="border border-zinc-600 bg-zinc-900 px-2 py-1 text-[10px] font-black tracking-[0.22em] text-zinc-300 sm:px-3 sm:text-xs">
           BATTLE FIELD
         </div>
-        <div className="text-[10px] text-zinc-400 sm:text-sm">의도 카드 시뮬레이션</div>
+        <div className="text-[10px] text-zinc-400 sm:text-sm">{TILE_COUNT} TILE FIELD</div>
       </div>
 
       <div className="absolute left-1/2 top-4 z-20 w-full max-w-5xl -translate-x-1/2 px-3 sm:top-6 sm:px-4">
@@ -59,8 +60,11 @@ export function BattleField({
         </div>
 
         <div className="absolute bottom-6 left-4 right-4 z-20 sm:bottom-8 sm:left-8 sm:right-8">
-          <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
-            {Array.from({ length: 6 }, (_, i) => {
+          <div
+            className="grid gap-1.5 sm:gap-2"
+            style={{ gridTemplateColumns: `repeat(${TILE_COUNT}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: TILE_COUNT }, (_, i) => {
               const isPlayerTile = i === playerTile;
               const isEnemyTile = i === enemyTile;
 
@@ -87,7 +91,7 @@ export function BattleField({
         <div className="pointer-events-none absolute bottom-[84px] left-4 right-4 z-10 sm:bottom-[104px] sm:left-8 sm:right-8">
           <div className="relative h-[220px] sm:h-[320px]">
             <div
-              className="absolute bottom-0 w-[88px] -translate-x-1/2 sm:w-[150px]"
+              className="absolute bottom-0 w-[88px] -translate-x-1/2 transition-all duration-300 sm:w-[150px]"
               style={{ left: playerLeft }}
             >
               <div className="mb-2 border border-red-500/30 bg-red-950/50 px-2 py-1 text-center text-[10px] font-black tracking-[0.16em] text-red-200 sm:px-3 sm:text-xs sm:tracking-[0.2em]">
@@ -99,7 +103,7 @@ export function BattleField({
             </div>
 
             <div
-              className="absolute bottom-0 w-[88px] -translate-x-1/2 sm:w-[150px]"
+              className="absolute bottom-0 w-[88px] -translate-x-1/2 transition-all duration-300 sm:w-[150px]"
               style={{ left: enemyLeft }}
             >
               <div className="mb-2 border border-yellow-500/30 bg-yellow-950/40 px-2 py-1 text-center text-[10px] font-black tracking-[0.16em] text-yellow-100 sm:px-3 sm:text-xs sm:tracking-[0.2em]">
