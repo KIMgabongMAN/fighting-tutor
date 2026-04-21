@@ -53,6 +53,60 @@ type HpTimeline = {
   enemyHp: number;
 };
 
+type ActionCard = {
+  id: ActionType;
+  label: string;
+  tag: string;
+  number: string;
+  accent: string;
+  toneClass: string;
+  borderClass: string;
+  clipClass: string;
+};
+
+const ACTION_CARDS: ActionCard[] = [
+  {
+    id: "빠른 견제로 끊기",
+    label: "빠른 견제로 끊기",
+    tag: "공격",
+    number: "01",
+    accent: "중거리 견제",
+    toneClass: "from-red-950 to-zinc-900",
+    borderClass: "border-red-500/40 hover:border-red-400",
+    clipClass: "[clip-path:polygon(0_0,100%_0,96%_100%,0_100%)]",
+  },
+  {
+    id: "가드하며 보기",
+    label: "가드하며 보기",
+    tag: "수비",
+    number: "02",
+    accent: "안전 관찰",
+    toneClass: "from-zinc-900 to-zinc-950",
+    borderClass: "border-zinc-600 hover:border-zinc-400",
+    clipClass: "[clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)]",
+  },
+  {
+    id: "점프로 접근",
+    label: "점프로 접근",
+    tag: "진입",
+    number: "03",
+    accent: "고위험 접근",
+    toneClass: "from-yellow-950/70 to-zinc-900",
+    borderClass: "border-yellow-500/40 hover:border-yellow-400",
+    clipClass: "[clip-path:polygon(0_0,100%_0,96%_100%,0_100%)]",
+  },
+  {
+    id: "뒤로 물러나기",
+    label: "뒤로 물러나기",
+    tag: "거리",
+    number: "04",
+    accent: "리셋 선택",
+    toneClass: "from-blue-950/60 to-zinc-900",
+    borderClass: "border-blue-500/40 hover:border-blue-400",
+    clipClass: "[clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)]",
+  },
+];
+
 export default function Home() {
   const [message, setMessage] = useState("상대가 중거리에서 천천히 접근하고 있습니다.");
   const [commentary, setCommentary] = useState(
@@ -91,7 +145,6 @@ export default function Home() {
     const timer = setTimeout(() => {
       showPhase("턴 시작", "system");
     }, 250);
-
     return () => clearTimeout(timer);
   }, []);
 
@@ -116,13 +169,11 @@ export default function Home() {
   const showPhase = (text: string, tone: PhaseTone) => {
     if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
 
-    const nextBanner = {
+    setPhaseBanner({
       id: Date.now() + Math.floor(Math.random() * 1000),
       text,
       tone,
-    };
-
-    setPhaseBanner(nextBanner);
+    });
 
     phaseTimerRef.current = setTimeout(() => {
       setPhaseBanner(null);
@@ -618,6 +669,23 @@ export default function Home() {
     );
   };
 
+  const handleAction = (action: ActionType) => {
+    switch (action) {
+      case "빠른 견제로 끊기":
+        handleFastPoke();
+        break;
+      case "가드하며 보기":
+        handleGuard();
+        break;
+      case "점프로 접근":
+        handleJump();
+        break;
+      case "뒤로 물러나기":
+        handleRetreat();
+        break;
+    }
+  };
+
   const handleReset = () => {
     setPlayerHp(100);
     setEnemyHp(100);
@@ -713,6 +781,25 @@ export default function Home() {
       default:
         return "text-zinc-100 border-zinc-600 bg-zinc-900/60";
     }
+  };
+
+  const tileActiveIndex =
+    distance === "근거리" ? [2, 3] : distance === "중거리" ? [1, 4] : [0, 5];
+
+  const renderTiles = () => {
+    return Array.from({ length: 6 }, (_, i) => {
+      const isActive = tileActiveIndex.includes(i);
+      return (
+        <div
+          key={i}
+          className={`h-10 sm:h-14 border transition-all duration-300 [clip-path:polygon(10%_0,100%_0,90%_100%,0_100%)] ${
+            isActive
+              ? "border-red-400/60 bg-gradient-to-b from-red-900/40 to-zinc-900 shadow-[0_0_20px_rgba(248,113,113,0.12)]"
+              : "border-zinc-700 bg-zinc-900/80"
+          }`}
+        />
+      );
+    });
   };
 
   if (showReview) {
@@ -890,10 +977,17 @@ export default function Home() {
       `}</style>
 
       <main className="min-h-screen bg-black p-3 sm:p-6 text-white">
-        <div className="mx-auto w-full max-w-[1600px]">
-          <div className="mb-3 sm:mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-[10px] sm:text-xs font-black tracking-[0.28em] text-zinc-500">TRAINING BUILD</div>
-            <div className="text-[10px] sm:text-xs font-black tracking-[0.28em] text-zinc-500">RESPONSIVE LAYOUT</div>
+        <div className="mx-auto w-full max-w-[1700px]">
+          <div className="mb-3 sm:mb-4 flex items-center justify-between">
+            <div className="text-[10px] sm:text-xs font-black tracking-[0.28em] text-zinc-500">
+              TRAINING BUILD
+            </div>
+            <button
+              onClick={handleReset}
+              className="border border-zinc-500 bg-zinc-900 px-3 py-2 text-[11px] sm:text-sm font-black tracking-[0.12em] hover:border-white [clip-path:polygon(4%_0,100%_0,96%_100%,0_100%)]"
+            >
+              다시 시작
+            </button>
           </div>
 
           <div className="relative w-full overflow-hidden rounded-[20px] sm:rounded-[28px] border border-zinc-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 shadow-[0_0_60px_rgba(0,0,0,0.65)]">
@@ -989,195 +1083,183 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-4 lg:grid-cols-[1.45fr_0.75fr]">
-                <div className="flex min-h-0 flex-col gap-3 sm:gap-4">
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-                    <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)]">
-                      <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] text-zinc-500">DISTANCE</div>
-                      <div className="text-lg sm:text-xl font-black">{distance}</div>
-                    </div>
-                    <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)]">
-                      <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] text-zinc-500">MOMENTUM</div>
-                      <div className="text-lg sm:text-xl font-black">{momentum}</div>
-                    </div>
-                    <div className={`border px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] ${fighterStateClass(playerState)}`}>
-                      <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] opacity-70">내 상태</div>
-                      <div className="text-sm sm:text-lg font-black">{playerState}</div>
-                    </div>
-                    <div className={`border px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)] ${fighterStateClass(enemyState)}`}>
-                      <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] opacity-70">상대 상태</div>
-                      <div className="text-sm sm:text-lg font-black">{enemyState}</div>
-                    </div>
+              <div className="flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+                  <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)]">
+                    <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] text-zinc-500">DISTANCE</div>
+                    <div className="text-lg sm:text-xl font-black">{distance}</div>
                   </div>
-
-                  <div
-                    className={`relative min-h-0 overflow-hidden rounded-3xl border border-zinc-700 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-2xl transition-all duration-200 ${stageShakeClass}`}
-                  >
-                    <div className={`pointer-events-none absolute inset-0 z-20 transition-all duration-150 ${flashOverlayClass}`} />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_58%)]" />
-                    <div className="absolute inset-0 opacity-25 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
-                    <div className="absolute left-0 right-0 bottom-12 sm:bottom-16 h-[2px] bg-zinc-700" />
-                    <div className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-20 sm:bottom-28 h-px bg-zinc-800" />
-
-                    <div className="relative z-10 flex items-center justify-between border-b border-zinc-800 bg-black/40 px-4 py-3 sm:px-6 sm:py-4">
-                      <div className="px-2 py-1 sm:px-3 text-[10px] sm:text-xs font-black tracking-[0.22em] text-zinc-300 border border-zinc-600 bg-zinc-900 [clip-path:polygon(0_0,100%_0,90%_100%,0_100%)]">
-                        BATTLE FIELD
-                      </div>
-                      <div className="text-[10px] sm:text-sm text-zinc-400">학습 전투 시뮬레이션</div>
-                    </div>
-
-                    <div className="absolute top-4 sm:top-6 left-1/2 z-20 w-full max-w-3xl -translate-x-1/2 px-3 sm:px-4">
-                      <div className="border border-zinc-700 bg-black/55 px-4 py-3 sm:px-5 sm:py-4 text-center text-sm sm:text-base font-semibold text-zinc-100 shadow-xl backdrop-blur-sm [clip-path:polygon(3%_0,100%_0,97%_100%,0_100%)]">
-                        {message}
-                      </div>
-                    </div>
-
-                    {effectText !== "없음" && (
-                      <div className="absolute top-20 sm:top-28 left-1/2 z-30 -translate-x-1/2">
-                        <div
-                          className={`px-5 py-2 sm:px-7 text-sm sm:text-xl font-black tracking-[0.18em] sm:tracking-[0.22em] border shadow-2xl animate-pulse [clip-path:polygon(6%_0,100%_0,94%_100%,0_100%)] ${effectTextClass}`}
-                        >
-                          {effectText}
-                        </div>
-                      </div>
-                    )}
-
-                    {showHitSpark && (
-                      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-                        <div className="relative h-28 w-28 sm:h-44 sm:w-44">
-                          <div className="absolute inset-0 scale-125 rounded-full bg-white/20 blur-2xl" />
-                          <div className="absolute left-1/2 top-1/2 h-[3px] w-28 sm:w-40 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-white" />
-                          <div className="absolute left-1/2 top-1/2 h-[3px] w-28 sm:w-40 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-white" />
-                          <div className="absolute left-1/2 top-1/2 h-[3px] w-20 sm:w-28 -translate-x-1/2 -translate-y-1/2 rotate-[14deg] bg-yellow-300" />
-                          <div className="absolute left-1/2 top-1/2 h-[3px] w-20 sm:w-28 -translate-x-1/2 -translate-y-1/2 -rotate-[18deg] bg-red-400" />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="absolute left-1/2 bottom-16 sm:bottom-24 z-20 -translate-x-1/2">
-                      <div
-                        className={`px-4 py-2 sm:px-5 text-xs sm:text-sm font-black tracking-[0.12em] sm:tracking-[0.18em] border shadow-lg [clip-path:polygon(8%_0,100%_0,92%_100%,0_100%)] ${centerStatusColor}`}
-                      >
-                        {distance} · {momentum}
-                      </div>
-                    </div>
-
-                    <div className={`relative z-10 flex min-h-[320px] sm:min-h-[520px] items-end ${stageJustify} px-4 pb-6 pt-24 sm:px-10 sm:pb-8 sm:pt-28 transition-all duration-300`}>
-                      <div
-                        className={`flex flex-col items-center transition-all duration-300 ${
-                          distance === "원거리" ? "translate-x-0" : distance === "중거리" ? "translate-x-2 sm:translate-x-6" : "translate-x-4 sm:translate-x-10"
-                        } ${playerLunge ? "translate-x-8 sm:translate-x-16 -translate-y-2 scale-110" : ""}`}
-                      >
-                        <div className="mb-2 sm:mb-3 px-2 py-1 sm:px-3 text-[10px] sm:text-xs font-black tracking-[0.16em] sm:tracking-[0.2em] text-red-200 border border-red-500/30 bg-red-950/50 [clip-path:polygon(0_0,100%_0,92%_100%,0_100%)]">
-                          PLAYER SIDE
-                        </div>
-                        <div
-                          className={`h-40 w-28 sm:h-64 sm:w-48 border flex items-center justify-center px-2 sm:px-4 text-center text-sm sm:text-lg font-bold transition-all duration-300 [clip-path:polygon(0_0,100%_0,92%_100%,0_100%)] ${playerBoxClass}`}
-                        >
-                          내 캐릭터
-                        </div>
-                      </div>
-
-                      <div
-                        className={`flex flex-col items-center transition-all duration-300 ${
-                          distance === "원거리" ? "translate-x-0" : distance === "중거리" ? "-translate-x-2 sm:-translate-x-6" : "-translate-x-4 sm:-translate-x-10"
-                        } ${enemyLunge ? "-translate-x-8 sm:-translate-x-16 -translate-y-2 scale-110" : ""}`}
-                      >
-                        <div className="mb-2 sm:mb-3 px-2 py-1 sm:px-3 text-[10px] sm:text-xs font-black tracking-[0.16em] sm:tracking-[0.2em] text-yellow-100 border border-yellow-500/30 bg-yellow-950/40 [clip-path:polygon(8%_0,100%_0,100%_100%,0_100%)]">
-                          ENEMY SIDE
-                        </div>
-                        <div
-                          className={`h-40 w-28 sm:h-64 sm:w-48 border flex items-center justify-center px-2 sm:px-4 text-center text-sm sm:text-lg font-bold transition-all duration-300 [clip-path:polygon(8%_0,100%_0,100%_100%,0_100%)] ${enemyBoxClass}`}
-                        >
-                          상대 캐릭터
-                        </div>
-                      </div>
-                    </div>
+                  <div className="border border-zinc-700 bg-zinc-900 px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)]">
+                    <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] text-zinc-500">MOMENTUM</div>
+                    <div className="text-lg sm:text-xl font-black">{momentum}</div>
+                  </div>
+                  <div className={`border px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] ${fighterStateClass(playerState)}`}>
+                    <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] opacity-70">내 상태</div>
+                    <div className="text-sm sm:text-lg font-black">{playerState}</div>
+                  </div>
+                  <div className={`border px-3 py-2 sm:px-4 sm:py-3 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)] ${fighterStateClass(enemyState)}`}>
+                    <div className="mb-1 text-[10px] sm:text-xs tracking-[0.2em] opacity-70">상대 상태</div>
+                    <div className="text-sm sm:text-lg font-black">{enemyState}</div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-rows-[0.42fr_1.58fr]">
-                  <div className="overflow-hidden border border-blue-900 bg-zinc-950 shadow-lg [clip-path:polygon(2%_0,100%_0,98%_100%,0_100%)]">
-                    <div className="border-b border-blue-950 bg-blue-950/30 px-4 py-2 sm:px-5 text-xs sm:text-sm font-black tracking-[0.2em] text-blue-300">
-                      COMMENTARY
+                <div
+                  className={`relative min-h-0 overflow-hidden rounded-3xl border border-zinc-700 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-2xl transition-all duration-200 ${stageShakeClass}`}
+                >
+                  <div className={`pointer-events-none absolute inset-0 z-20 transition-all duration-150 ${flashOverlayClass}`} />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_58%)]" />
+                  <div className="absolute inset-0 opacity-25 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
+                  <div className="absolute left-0 right-0 bottom-20 sm:bottom-24 h-[2px] bg-zinc-700" />
+
+                  <div className="relative z-10 flex items-center justify-between border-b border-zinc-800 bg-black/40 px-4 py-3 sm:px-6 sm:py-4">
+                    <div className="px-2 py-1 sm:px-3 text-[10px] sm:text-xs font-black tracking-[0.22em] text-zinc-300 border border-zinc-600 bg-zinc-900 [clip-path:polygon(0_0,100%_0,90%_100%,0_100%)]">
+                      BATTLE FIELD
                     </div>
-                    <div className="px-4 py-3 sm:px-5 text-xs sm:text-sm leading-5 text-zinc-200">
-                      {commentary}
+                    <div className="text-[10px] sm:text-sm text-zinc-400">학습 전투 시뮬레이션</div>
+                  </div>
+
+                  <div className="absolute top-4 sm:top-6 left-1/2 z-20 w-full max-w-4xl -translate-x-1/2 px-3 sm:px-4">
+                    <div className="border border-zinc-700 bg-black/55 px-4 py-3 sm:px-5 sm:py-4 text-center text-sm sm:text-base font-semibold text-zinc-100 shadow-xl backdrop-blur-sm [clip-path:polygon(3%_0,100%_0,97%_100%,0_100%)]">
+                      {message}
                     </div>
                   </div>
 
-                  <div className="min-h-0 overflow-hidden border border-zinc-700 bg-zinc-950 shadow-lg [clip-path:polygon(2%_0,100%_0,98%_100%,0_100%)]">
-                    <div className="border-b border-zinc-800 bg-zinc-900/70 px-4 py-3 sm:px-5 text-xs sm:text-sm font-black tracking-[0.2em] text-zinc-300">
-                      COMMAND PANEL
+                  {effectText !== "없음" && (
+                    <div className="absolute top-20 sm:top-28 left-1/2 z-30 -translate-x-1/2">
+                      <div
+                        className={`px-5 py-2 sm:px-7 text-sm sm:text-xl font-black tracking-[0.18em] sm:tracking-[0.22em] border shadow-2xl animate-pulse [clip-path:polygon(6%_0,100%_0,94%_100%,0_100%)] ${effectTextClass}`}
+                      >
+                        {effectText}
+                      </div>
+                    </div>
+                  )}
+
+                  {showHitSpark && (
+                    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                      <div className="relative h-28 w-28 sm:h-44 sm:w-44">
+                        <div className="absolute inset-0 scale-125 rounded-full bg-white/20 blur-2xl" />
+                        <div className="absolute left-1/2 top-1/2 h-[3px] w-28 sm:w-40 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-white" />
+                        <div className="absolute left-1/2 top-1/2 h-[3px] w-28 sm:w-40 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-white" />
+                        <div className="absolute left-1/2 top-1/2 h-[3px] w-20 sm:w-28 -translate-x-1/2 -translate-y-1/2 rotate-[14deg] bg-yellow-300" />
+                        <div className="absolute left-1/2 top-1/2 h-[3px] w-20 sm:w-28 -translate-x-1/2 -translate-y-1/2 -rotate-[18deg] bg-red-400" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="absolute left-1/2 bottom-28 sm:bottom-32 z-20 -translate-x-1/2">
+                    <div
+                      className={`px-4 py-2 sm:px-5 text-xs sm:text-sm font-black tracking-[0.12em] sm:tracking-[0.18em] border shadow-lg [clip-path:polygon(8%_0,100%_0,92%_100%,0_100%)] ${centerStatusColor}`}
+                    >
+                      {distance} · {momentum}
+                    </div>
+                  </div>
+
+                  <div className={`relative z-10 flex min-h-[360px] sm:min-h-[560px] items-end ${stageJustify} px-4 pb-28 pt-24 sm:px-10 sm:pb-32 sm:pt-28 transition-all duration-300`}>
+                    <div
+                      className={`flex flex-col items-center transition-all duration-300 ${
+                        distance === "원거리" ? "translate-x-0" : distance === "중거리" ? "translate-x-2 sm:translate-x-6" : "translate-x-4 sm:translate-x-10"
+                      } ${playerLunge ? "translate-x-8 sm:translate-x-16 -translate-y-2 scale-110" : ""}`}
+                    >
+                      <div className="mb-2 sm:mb-3 px-2 py-1 sm:px-3 text-[10px] sm:text-xs font-black tracking-[0.16em] sm:tracking-[0.2em] text-red-200 border border-red-500/30 bg-red-950/50 [clip-path:polygon(0_0,100%_0,92%_100%,0_100%)]">
+                        PLAYER SIDE
+                      </div>
+                      <div
+                        className={`h-40 w-28 sm:h-64 sm:w-48 border flex items-center justify-center px-2 sm:px-4 text-center text-sm sm:text-lg font-bold transition-all duration-300 [clip-path:polygon(0_0,100%_0,92%_100%,0_100%)] ${playerBoxClass}`}
+                      >
+                        내 캐릭터
+                      </div>
                     </div>
 
-                    <div className="grid gap-2 p-3 content-start sm:grid-cols-2 lg:grid-cols-1">
-                      <button
-                        onClick={handleFastPoke}
-                        disabled={playerHp <= 0 || enemyHp <= 0}
-                        className="group border border-red-500/30 bg-gradient-to-r from-red-950 to-zinc-900 px-4 py-2 text-left transition hover:border-red-400 hover:translate-y-[-2px] disabled:opacity-40 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)]"
+                    <div
+                      className={`flex flex-col items-center transition-all duration-300 ${
+                        distance === "원거리" ? "translate-x-0" : distance === "중거리" ? "-translate-x-2 sm:-translate-x-6" : "-translate-x-4 sm:-translate-x-10"
+                      } ${enemyLunge ? "-translate-x-8 sm:-translate-x-16 -translate-y-2 scale-110" : ""}`}
+                    >
+                      <div className="mb-2 sm:mb-3 px-2 py-1 sm:px-3 text-[10px] sm:text-xs font-black tracking-[0.16em] sm:tracking-[0.2em] text-yellow-100 border border-yellow-500/30 bg-yellow-950/40 [clip-path:polygon(8%_0,100%_0,100%_100%,0_100%)]">
+                        ENEMY SIDE
+                      </div>
+                      <div
+                        className={`h-40 w-28 sm:h-64 sm:w-48 border flex items-center justify-center px-2 sm:px-4 text-center text-sm sm:text-lg font-bold transition-all duration-300 [clip-path:polygon(8%_0,100%_0,100%_100%,0_100%)] ${enemyBoxClass}`}
                       >
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-[10px] font-black tracking-[0.22em] text-red-300">OFFENSE</span>
-                          <span className="text-[10px] text-zinc-500 group-hover:text-zinc-300">01</span>
-                        </div>
-                        <div className="text-sm font-black xl:text-base">빠른 견제로 끊기</div>
-                      </button>
-
-                      <button
-                        onClick={handleGuard}
-                        disabled={playerHp <= 0 || enemyHp <= 0}
-                        className="group border border-zinc-600 bg-gradient-to-r from-zinc-900 to-zinc-950 px-4 py-2 text-left transition hover:border-zinc-400 hover:translate-y-[-2px] disabled:opacity-40 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)]"
-                      >
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-[10px] font-black tracking-[0.22em] text-zinc-300">DEFENSE</span>
-                          <span className="text-[10px] text-zinc-500 group-hover:text-zinc-300">02</span>
-                        </div>
-                        <div className="text-sm font-black xl:text-base">가드하며 보기</div>
-                      </button>
-
-                      <button
-                        onClick={handleJump}
-                        disabled={playerHp <= 0 || enemyHp <= 0}
-                        className="group border border-yellow-500/30 bg-gradient-to-r from-yellow-950/60 to-zinc-900 px-4 py-2 text-left transition hover:border-yellow-400 hover:translate-y-[-2px] disabled:opacity-40 [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)]"
-                      >
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-[10px] font-black tracking-[0.22em] text-yellow-200">RISK</span>
-                          <span className="text-[10px] text-zinc-500 group-hover:text-zinc-300">03</span>
-                        </div>
-                        <div className="text-sm font-black xl:text-base">점프로 접근</div>
-                      </button>
-
-                      <button
-                        onClick={handleRetreat}
-                        disabled={playerHp <= 0 || enemyHp <= 0}
-                        className="group border border-blue-500/30 bg-gradient-to-r from-blue-950/50 to-zinc-900 px-4 py-2 text-left transition hover:border-blue-400 hover:translate-y-[-2px] disabled:opacity-40 [clip-path:polygon(4%_0,100%_0,100%_100%,0_100%)]"
-                      >
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-[10px] font-black tracking-[0.22em] text-blue-200">SPACE</span>
-                          <span className="text-[10px] text-zinc-500 group-hover:text-zinc-300">04</span>
-                        </div>
-                        <div className="text-sm font-black xl:text-base">뒤로 물러나기</div>
-                      </button>
-
-                      <button
-                        onClick={handleReset}
-                        className="sm:col-span-2 lg:col-span-1 border border-zinc-500 bg-gradient-to-r from-zinc-800 to-zinc-950 px-4 py-2 text-center transition hover:border-white hover:translate-y-[-2px] [clip-path:polygon(2%_0,100%_0,98%_100%,0_100%)]"
-                      >
-                        <div className="text-sm font-black xl:text-base">다시 시작</div>
-                      </button>
+                        상대 캐릭터
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="absolute bottom-6 left-4 right-4 z-20 sm:bottom-8 sm:left-8 sm:right-8">
+                    <div className="grid grid-cols-6 gap-1.5 sm:gap-2">{renderTiles()}</div>
                   </div>
                 </div>
+
+                <div className="overflow-hidden border border-blue-900 bg-zinc-950 shadow-lg [clip-path:polygon(2%_0,100%_0,98%_100%,0_100%)]">
+                  <div className="border-b border-blue-950 bg-blue-950/30 px-4 py-2 sm:px-5 text-xs sm:text-sm font-black tracking-[0.2em] text-blue-300">
+                    COMMENTARY
+                  </div>
+                  <div className="px-4 py-3 sm:px-5 text-xs sm:text-sm leading-5 text-zinc-200">
+                    {commentary}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto pb-1">
+                  <div className="flex min-w-max gap-3">
+                    {ACTION_CARDS.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() => handleAction(card.id)}
+                        disabled={playerHp <= 0 || enemyHp <= 0}
+                        className={`group w-[250px] sm:w-[280px] shrink-0 border bg-gradient-to-r ${card.toneClass} ${card.borderClass} ${card.clipClass} p-4 text-left transition hover:-translate-y-1 disabled:opacity-40`}
+                      >
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-[11px] font-black tracking-[0.24em] text-zinc-300">
+                            {card.tag}
+                          </span>
+                          <span className="text-[11px] text-zinc-500 group-hover:text-zinc-300">
+                            {card.number}
+                          </span>
+                        </div>
+
+                        <div className="mb-2 text-lg font-black text-white sm:text-xl">{card.label}</div>
+                        <div className="mb-3 text-xs tracking-[0.16em] text-zinc-400">{card.accent}</div>
+
+                        <div className="space-y-1 text-xs text-zinc-300">
+                          {card.id === "빠른 견제로 끊기" && (
+                            <>
+                              <div>중거리에서 접근을 끊기 좋다</div>
+                              <div>원거리에서는 닿지 않을 수 있다</div>
+                            </>
+                          )}
+                          {card.id === "가드하며 보기" && (
+                            <>
+                              <div>불리할 때 가장 안정적인 선택</div>
+                              <div>유리할 때는 흐름을 놓칠 수 있다</div>
+                            </>
+                          )}
+                          {card.id === "점프로 접근" && (
+                            <>
+                              <div>원거리 진입에는 강하지만 리스크가 크다</div>
+                              <div>중거리에서는 대공에 취약하다</div>
+                            </>
+                          )}
+                          {card.id === "뒤로 물러나기" && (
+                            <>
+                              <div>압박을 끊고 거리를 리셋한다</div>
+                              <div>유리할 때 쓰면 기회를 포기할 수 있다</div>
+                            </>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {(playerHp <= 0 || enemyHp <= 0) && (
+                  <div className="border-t border-zinc-800 bg-black/60 px-4 py-3 sm:px-5">
+                    <div className="text-center text-lg sm:text-2xl font-black tracking-[0.12em] sm:tracking-[0.18em] text-zinc-100 animate-pulse">
+                      {enemyHp <= 0 ? "승리! 상대를 쓰러뜨렸다." : "패배... 네가 쓰러졌다."}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {(playerHp <= 0 || enemyHp <= 0) && (
-                <div className="border-t border-zinc-800 bg-black/60 px-4 py-3 sm:px-5">
-                  <div className="text-center text-lg sm:text-2xl font-black tracking-[0.12em] sm:tracking-[0.18em] text-zinc-100 animate-pulse">
-                    {enemyHp <= 0 ? "승리! 상대를 쓰러뜨렸다." : "패배... 네가 쓰러졌다."}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
