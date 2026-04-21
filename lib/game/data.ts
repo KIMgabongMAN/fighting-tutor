@@ -1,0 +1,471 @@
+import type { CardDefinition, PhaseId, PhaseTone, PlayerRoleInPhase } from "@/lib/game/types";
+
+export const PHASE_META: Record<
+  PhaseId,
+  {
+    label: string;
+    tone: PhaseTone;
+  }
+> = {
+  opening: { label: "개막", tone: "system" },
+  closeNeutral: { label: "근거리 교전", tone: "neutral" },
+  midNeutral: { label: "중거리 교전", tone: "neutral" },
+  farNeutral: { label: "원거리 교전", tone: "neutral" },
+  pressure: { label: "압박 상황", tone: "advantage" },
+  guard: { label: "가드 상황", tone: "neutral" },
+  hardDown: { label: "하드 다운", tone: "danger" },
+  combo: { label: "콤보 상황", tone: "advantage" },
+};
+
+const OPENING_NEUTRAL_CARDS: CardDefinition[] = [
+  {
+    id: "opening_approach",
+    phase: "opening",
+    role: "neutral",
+    order: "01",
+    title: "전진 압박 준비",
+    description:
+      "첫 턴부터 거리를 줄이며 주도권을 노린다. 상대가 물러나거나 관망하면 유리한 흐름을 만들기 쉽다.",
+    tags: ["지상", "접근"],
+    resultTags: [],
+    color: "red",
+    groupLabel: "개막",
+  },
+  {
+    id: "opening_poke",
+    phase: "opening",
+    role: "neutral",
+    order: "02",
+    title: "빠른 견제",
+    description:
+      "상대의 접근과 느린 시작을 끊기 좋다. 개막 국면에서 가장 직관적인 교전용 카드다.",
+    tags: ["지상", "공격", "빠름"],
+    resultTags: ["승리"],
+    color: "orange",
+    groupLabel: "개막",
+  },
+  {
+    id: "opening_jump",
+    phase: "opening",
+    role: "neutral",
+    order: "03",
+    title: "점프 진입",
+    description:
+      "한 번에 거리를 좁혀 흐름을 바꾸려는 선택이다. 준비된 견제에는 취약하지만 성공하면 압박으로 이어질 수 있다.",
+    tags: ["공중", "공격"],
+    resultTags: ["승리"],
+    color: "gold",
+    groupLabel: "개막",
+  },
+  {
+    id: "opening_guard",
+    phase: "opening",
+    role: "neutral",
+    order: "04",
+    title: "가드 준비",
+    description:
+      "첫 충돌을 안전하게 확인하는 선택이다. 당장 이득은 적지만 수세를 정리하며 가드 상황으로 진입하기 좋다.",
+    tags: ["지상", "수비"],
+    resultTags: ["패배"],
+    color: "blue",
+    groupLabel: "개막",
+  },
+  {
+    id: "opening_backstep",
+    phase: "opening",
+    role: "neutral",
+    order: "05",
+    title: "뒤로 빠지기",
+    description:
+      "거리를 벌리며 원거리 교전으로 넘어가려는 선택이다. 공격 흐름은 약하지만 리스크를 줄일 수 있다.",
+    tags: ["지상", "거리조절"],
+    resultTags: ["패배"],
+    color: "gray",
+    groupLabel: "개막",
+  },
+];
+
+const NEUTRAL_CARDS: CardDefinition[] = [
+  {
+    id: "neutral_poke",
+    phase: "midNeutral",
+    role: "neutral",
+    order: "01",
+    title: "빠른 견제",
+    description:
+      "중립 교전에서 접근을 끊는 기본 카드다. 상대의 전진과 관망을 흔들며 압박 상황으로 이어질 수 있다.",
+    tags: ["지상", "공격", "빠름"],
+    resultTags: ["승리"],
+    color: "red",
+    groupLabel: "교전",
+  },
+  {
+    id: "neutral_heavy",
+    phase: "midNeutral",
+    role: "neutral",
+    order: "02",
+    title: "강한 견제",
+    description:
+      "리턴은 높지만 발동이 느리다. 상대가 섣불리 움직일 때 맞추면 콤보나 다운으로 이어질 가능성이 있다.",
+    tags: ["지상", "공격", "느림"],
+    resultTags: ["승리", "콤보"],
+    color: "orange",
+    groupLabel: "교전",
+  },
+  {
+    id: "neutral_jump",
+    phase: "midNeutral",
+    role: "neutral",
+    order: "03",
+    title: "점프 진입",
+    description:
+      "중거리에서 기습적으로 거리를 줄이는 카드다. 맞으면 흐름을 가져오지만 빠른 견제에 끊길 수 있다.",
+    tags: ["공중", "공격"],
+    resultTags: ["승리"],
+    color: "gold",
+    groupLabel: "교전",
+  },
+  {
+    id: "neutral_guard",
+    phase: "midNeutral",
+    role: "neutral",
+    order: "04",
+    title: "가드하며 보기",
+    description:
+      "상대의 의도를 확인하며 무리하지 않는다. 손해를 줄이는 대신 가드 상황으로 넘어갈 가능성이 있다.",
+    tags: ["지상", "수비"],
+    resultTags: ["패배"],
+    color: "blue",
+    groupLabel: "교전",
+  },
+  {
+    id: "neutral_backstep",
+    phase: "midNeutral",
+    role: "neutral",
+    order: "05",
+    title: "뒤로 물러나기",
+    description:
+      "현재 거리를 한 단계 벌리며 위험을 줄인다. 교전에서 벗어나 원거리나 중거리로 흐름을 바꾼다.",
+    tags: ["지상", "거리조절"],
+    resultTags: [],
+    color: "gray",
+    groupLabel: "교전",
+  },
+];
+
+const PRESSURE_ATTACKER_CARDS: CardDefinition[] = [
+  {
+    id: "pressure_attacker_mixup",
+    phase: "pressure",
+    role: "attacker",
+    order: "01",
+    title: "개틀링 연계 중단&하단 이지",
+    description:
+      "연계를 끊는 척하며 중단/하단 선택을 강요한다. 1차 버전에서는 압박 유지형 카드로 처리한다.",
+    tags: ["공격", "이지선다", "지상"],
+    resultTags: ["승리"],
+    color: "red",
+    groupLabel: "공격자",
+  },
+  {
+    id: "pressure_attacker_frameTrap",
+    phase: "pressure",
+    role: "attacker",
+    order: "02",
+    title: "프레임 트랩",
+    description:
+      "상대가 느린 개기기를 선택했다면 반드시 잡아낸다. 성공하면 압박 유지 또는 콤보로 이어질 수 있다.",
+    tags: ["공격", "프레임트랩", "지상"],
+    resultTags: ["승리", "콤보"],
+    color: "orange",
+    groupLabel: "공격자",
+  },
+  {
+    id: "pressure_attacker_waitGrab",
+    phase: "pressure",
+    role: "attacker",
+    order: "03",
+    title: "기다렸다가 잡기",
+    description:
+      "상대의 수비를 읽고 늦게 잡기를 건다. 수비 태그에는 강하고 공격/공중 선택에는 취약하다.",
+    tags: ["잡기", "지상"],
+    resultTags: ["다운"],
+    color: "gold",
+    groupLabel: "공격자",
+  },
+  {
+    id: "pressure_attacker_reversal",
+    phase: "pressure",
+    role: "attacker",
+    order: "04",
+    title: "무적기",
+    description:
+      "상대의 공격 성향을 강제로 뚫는다. 단, 캔슬불가라서 다음 흐름 운영에서 큰 부담이 생긴다.",
+    tags: ["공격", "무적", "지상", "캔슬불가"],
+    resultTags: ["승리"],
+    color: "gray",
+    groupLabel: "공격자",
+  },
+  {
+    id: "pressure_attacker_wait",
+    phase: "pressure",
+    role: "attacker",
+    order: "05",
+    title: "관망",
+    description:
+      "현 위치를 유지하며 상대 반응을 본다. 직접적인 리턴은 낮지만 무리한 반격을 유도할 수 있다.",
+    tags: ["지상", "수비"],
+    resultTags: [],
+    color: "blue",
+    groupLabel: "공격자",
+  },
+];
+
+const PRESSURE_DEFENDER_CARDS: CardDefinition[] = [
+  {
+    id: "pressure_defender_guard",
+    phase: "pressure",
+    role: "defender",
+    order: "01",
+    title: "얌전히 가드",
+    description:
+      "공격 태그 카드의 피해를 막고, 이후 상대를 한 칸 밀어낸다. 잡기에는 명확하게 취약하다.",
+    tags: ["수비", "지상"],
+    resultTags: ["패배"],
+    color: "blue",
+    groupLabel: "수비자",
+  },
+  {
+    id: "pressure_defender_grab",
+    phase: "pressure",
+    role: "defender",
+    order: "02",
+    title: "잡기",
+    description:
+      "상대가 잡기를 선택했을 때만 비기고, 그 외 대부분의 공격 압박에는 밀린다.",
+    tags: ["지상", "잡기"],
+    resultTags: ["다운"],
+    color: "orange",
+    groupLabel: "수비자",
+  },
+  {
+    id: "pressure_defender_jumpGuard",
+    phase: "pressure",
+    role: "defender",
+    order: "03",
+    title: "점프가드",
+    description:
+      "공중으로 빠지며 수세를 정리한다. 하단 선택을 강하게 의식해야 하는 카드다.",
+    tags: ["수비", "공중"],
+    resultTags: ["패배"],
+    color: "gold",
+    groupLabel: "수비자",
+  },
+  {
+    id: "pressure_defender_abare",
+    phase: "pressure",
+    role: "defender",
+    order: "04",
+    title: "개기기",
+    description:
+      "압박 중 빈틈을 노려 버튼을 내민다. 프레임트랩에 걸리면 크게 역으로 맞는다.",
+    tags: ["공격", "느림", "개기기"],
+    resultTags: ["승리"],
+    color: "red",
+    groupLabel: "수비자",
+  },
+  {
+    id: "pressure_defender_reversal",
+    phase: "pressure",
+    role: "defender",
+    order: "05",
+    title: "무적기",
+    description:
+      "무적을 믿고 압박을 뒤집는다. 상대 공격에는 강하지만 읽히면 흐름이 크게 꺾인다.",
+    tags: ["무적", "공격", "지상", "캔슬불가"],
+    resultTags: ["승리"],
+    color: "gray",
+    groupLabel: "수비자",
+  },
+];
+
+const HARD_DOWN_ATTACKER_CARDS: CardDefinition[] = [
+  {
+    id: "harddown_attacker_safeJump",
+    phase: "hardDown",
+    role: "attacker",
+    order: "01",
+    title: "안전 점프",
+    description:
+      "기상 타이밍에 맞춰 공격과 안전을 동시에 노린다. 상대 무적기까지 염두에 두는 선택이다.",
+    tags: ["공중", "공격"],
+    resultTags: ["승리"],
+    color: "red",
+    groupLabel: "공격자",
+  },
+  {
+    id: "harddown_attacker_meaty",
+    phase: "hardDown",
+    role: "attacker",
+    order: "02",
+    title: "기상 압박",
+    description:
+      "상대가 일어나자마자 지상 압박을 깔아두는 선택이다. 성공하면 다시 압박 상황으로 이어진다.",
+    tags: ["지상", "공격"],
+    resultTags: ["승리"],
+    color: "orange",
+    groupLabel: "공격자",
+  },
+  {
+    id: "harddown_attacker_wait",
+    phase: "hardDown",
+    role: "attacker",
+    order: "03",
+    title: "관망",
+    description:
+      "상대의 무적기나 버스트를 의식하며 한 박자 늦춘다. 직접 리턴은 낮지만 반전을 덜 허용한다.",
+    tags: ["지상", "수비"],
+    resultTags: [],
+    color: "gray",
+    groupLabel: "공격자",
+  },
+];
+
+const HARD_DOWN_DEFENDER_CARDS: CardDefinition[] = [
+  {
+    id: "harddown_defender_riseGuard",
+    phase: "hardDown",
+    role: "defender",
+    order: "01",
+    title: "기상 가드",
+    description:
+      "가장 안전한 선택이다. 즉시 반전은 어렵지만, 하드 다운 이후 흐름을 안정적으로 버틴다.",
+    tags: ["지상", "수비"],
+    resultTags: ["패배"],
+    color: "blue",
+    groupLabel: "수비자",
+  },
+  {
+    id: "harddown_defender_riseAbare",
+    phase: "hardDown",
+    role: "defender",
+    order: "02",
+    title: "기상 개기기",
+    description:
+      "상대의 압박 빈틈을 읽고 맞받아친다. 읽히면 콤보를 허용할 수 있다.",
+    tags: ["공격", "느림", "개기기", "지상"],
+    resultTags: ["승리"],
+    color: "red",
+    groupLabel: "수비자",
+  },
+  {
+    id: "harddown_defender_reversal",
+    phase: "hardDown",
+    role: "defender",
+    order: "03",
+    title: "기상 무적기",
+    description:
+      "하드 다운에서 가장 강한 반전 카드다. 그러나 리스크도 매우 크다.",
+    tags: ["무적", "공격", "지상", "캔슬불가"],
+    resultTags: ["승리"],
+    color: "gray",
+    groupLabel: "수비자",
+  },
+];
+
+const COMBO_ATTACKER_CARDS: CardDefinition[] = [
+  {
+    id: "combo_attacker_damage",
+    phase: "combo",
+    role: "attacker",
+    order: "01",
+    title: "최대 데미지",
+    description:
+      "당장 큰 피해를 우선한다. 국면은 길게 이어지지 않지만 확실한 체력 이득을 챙긴다.",
+    tags: ["공격", "지상"],
+    resultTags: ["승리"],
+    color: "red",
+    groupLabel: "공격자",
+  },
+  {
+    id: "combo_attacker_down",
+    phase: "combo",
+    role: "attacker",
+    order: "02",
+    title: "다운 마무리",
+    description:
+      "데미지를 조금 줄이는 대신 하드 다운으로 마무리한다. 이후 기상 심리전으로 이어진다.",
+    tags: ["공격", "지상"],
+    resultTags: ["다운"],
+    color: "orange",
+    groupLabel: "공격자",
+  },
+  {
+    id: "combo_attacker_reset",
+    phase: "combo",
+    role: "attacker",
+    order: "03",
+    title: "압박 리셋",
+    description:
+      "콤보를 짧게 끊고 다시 압박 상황을 만든다. 상대의 방어 습관을 흔들기 좋은 선택이다.",
+    tags: ["공격", "지상"],
+    resultTags: ["승리"],
+    color: "gold",
+    groupLabel: "공격자",
+  },
+];
+
+const COMBO_DEFENDER_CARDS: CardDefinition[] = [
+  {
+    id: "combo_defender_burst",
+    phase: "combo",
+    role: "defender",
+    order: "01",
+    title: "버스트",
+    description:
+      "현재 콤보를 강제로 끊고 흐름을 리셋한다. 1차 버전에서는 콤보 상황에서만 등장한다.",
+    tags: ["버스트", "수비"],
+    resultTags: ["패배"],
+    color: "blue",
+    groupLabel: "수비자",
+  },
+  {
+    id: "combo_defender_hold",
+    phase: "combo",
+    role: "defender",
+    order: "02",
+    title: "버티기",
+    description:
+      "자원을 쓰지 않고 콤보를 받아들인다. 대신 이후 하드 다운이나 가드 상황으로 이어질 수 있다.",
+    tags: ["수비"],
+    resultTags: ["패배"],
+    color: "gray",
+    groupLabel: "수비자",
+  },
+];
+
+export function getCardsForPhase(phase: PhaseId, role: PlayerRoleInPhase): CardDefinition[] {
+  if (phase === "opening") return OPENING_NEUTRAL_CARDS;
+
+  if (phase === "closeNeutral" || phase === "midNeutral" || phase === "farNeutral") {
+    return NEUTRAL_CARDS.map((card) => ({ ...card, phase }));
+  }
+
+  if (phase === "pressure") {
+    return role === "attacker" ? PRESSURE_ATTACKER_CARDS : PRESSURE_DEFENDER_CARDS;
+  }
+
+  if (phase === "guard") {
+    return role === "defender" ? PRESSURE_DEFENDER_CARDS : PRESSURE_ATTACKER_CARDS;
+  }
+
+  if (phase === "hardDown") {
+    return role === "attacker" ? HARD_DOWN_ATTACKER_CARDS : HARD_DOWN_DEFENDER_CARDS;
+  }
+
+  if (phase === "combo") {
+    return role === "attacker" ? COMBO_ATTACKER_CARDS : COMBO_DEFENDER_CARDS;
+  }
+
+  return OPENING_NEUTRAL_CARDS;
+}
