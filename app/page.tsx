@@ -7,6 +7,7 @@ import { BattleHud } from "@/components/game/BattleHud";
 import { CommentaryBox } from "@/components/game/CommentaryBox";
 import { DuelOverlay } from "@/components/game/DuelOverlay";
 import { PhaseBanner } from "@/components/game/PhaseBanner";
+import { ReviewScreen } from "@/components/game/ReviewScreen";
 import {
   PHASE_META,
   UNIVERSAL_BURST_CARD,
@@ -24,6 +25,7 @@ import type {
   PhaseId,
   PlayerRoleInPhase,
   ResolutionResult,
+  TurnRecord,
 } from "@/lib/game/types";
 
 const INITIAL_PLAYER_TILE = 1;
@@ -39,6 +41,28 @@ function buildCardPool(
   const cards = [...getCardsForPhase(phase, role)];
   if (canUseBurst) cards.push(UNIVERSAL_BURST_CARD);
   return cards;
+}
+
+function buildTurnRecord(
+  prevState: GameState,
+  result: ResolutionResult,
+  playerCard: CardDefinition,
+  enemyCard: CardDefinition
+): TurnRecord {
+  return {
+    turn: prevState.turn,
+    phaseLabel: PHASE_META[prevState.phase]?.label ?? "국면",
+    playerCardTitle: playerCard.title,
+    enemyCardTitle: enemyCard.title,
+    outcome: result.duelOutcome,
+    playerHpBefore: prevState.playerHp,
+    playerHpAfter: result.nextPlayerHp,
+    enemyHpBefore: prevState.enemyHp,
+    enemyHpAfter: result.nextEnemyHp,
+    distanceBefore: deriveDistanceLabel(prevState.playerTile, prevState.enemyTile),
+    distanceAfter: deriveDistanceLabel(result.nextPlayerTile, result.nextEnemyTile),
+    note: result.effectText || result.message,
+  };
 }
 
 export default function Page() {
@@ -66,6 +90,7 @@ export default function Page() {
     enemyBurstUsed: false,
   });
 
+  const [history, setHistory] = useState<TurnRecord[]>([]);
   const [banner, setBanner] = useState<PhaseBannerState | null>(null);
   const [duelOverlay, setDuelOverlay] = useState<DuelOverlayState | null>(null);
 
@@ -73,10 +98,17 @@ export default function Page() {
   const duelApplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentCards = useMemo(() => {
-    return buildCardPool(state.phase, state.playerRoleInPhase, !state.playerBurstUsed);
+    return buildCardPool(
+      state.phase,
+      state.playerRoleInPhase,
+      !state.playerBurstUsed
+    );
   }, [state.phase, state.playerRoleInPhase, state.playerBurstUsed]);
 
-  const phaseTitle = useMemo(() => PHASE_META[state.phase]?.label ?? "국면", [state.phase]);
+  const phaseTitle = useMemo(
+    () => PHASE_META[state.phase]?.label ?? "국면",
+    [state.phase]
+  );
 
   const distanceLabel = useMemo(() => {
     return deriveDistanceLabel(state.playerTile, state.enemyTile);
@@ -119,6 +151,11 @@ export default function Page() {
     playerCard: CardDefinition,
     enemyCard: CardDefinition
   ) => {
+    setHistory((prev) => [
+      ...prev,
+      buildTurnRecord(state, result, playerCard, enemyCard),
+    ]);
+
     setState((prev) => ({
       ...prev,
       playerHp: result.nextPlayerHp,
@@ -137,18 +174,28 @@ export default function Page() {
       turn: prev.turn + 1,
       lastPlayerCardId: playerCard.id,
       lastEnemyCardId: enemyCard.id,
-      playerBurstUsed: prev.playerBurstUsed || playerCard.id === UNIVERSAL_BURST_CARD.id,
-      enemyBurstUsed: prev.enemyBurstUsed || enemyCard.id === UNIVERSAL_BURST_CARD.id,
+      playerBurstUsed:
+        prev.playerBurstUsed || playerCard.id === UNIVERSAL_BURST_CARD.id,
+      enemyBurstUsed:
+        prev.enemyBurstUsed || enemyCard.id === UNIVERSAL_BURST_CARD.id,
     }));
 
     setDuelOverlay(null);
-    showBanner(result.nextPhase);
+
+    const willGameEnd = result.nextPlayerHp <= 0 || result.nextEnemyHp <= 0;
+    if (!willGameEnd) {
+      showBanner(result.nextPhase);
+    }
   };
 
   const handleSelectCard = (playerCard: CardDefinition) => {
     if (isGameOver || isDuelPlaying) return;
 
-    const enemyCards = buildCardPool(state.phase, enemyRole, !state.enemyBurstUsed);
+    const enemyCards = buildCardPool(
+      state.phase,
+      enemyRole,
+      !state.enemyBurstUsed
+    );
 
     const enemyCard = pickWeightedRandomCard({
       cards: enemyCards,
@@ -183,6 +230,7 @@ export default function Page() {
     if (duelApplyTimerRef.current) clearTimeout(duelApplyTimerRef.current);
 
     setDuelOverlay(null);
+    setHistory([]);
 
     setState({
       playerHp: 100,
@@ -252,7 +300,8 @@ export default function Page() {
         }
 
         .phase-banner-anim {
-          animation: phaseSlideCenter 1.55s cubic-bezier(0.22, 0.9, 0.22, 1) forwards;
+          animation: phaseSlideCenter 1.55s cubic-bezier(0.22, 0.9, 0.22, 1)
+            forwards;
         }
       `}</style>
 
@@ -265,7 +314,7 @@ export default function Page() {
 
             <button
               onClick={handleReset}
-              className="border border-zinc-500 bg-zinc-900 px-3 py-2 text-[11px] font-black tracking-[0.12em] hover:border-white [clip-path:polygon(4%_0,100%_0,96%_100%,0_100%)] sm:text-sm"
+              className="rounded-md border border-zinc-500 bg-zinc-900 px-3 py-2 text-[11px] font-black tracking-[0.12em] hover:border-white sm:text-sm"
             >
               다시 시작
             </button>
@@ -284,35 +333,39 @@ export default function Page() {
               />
             )}
 
-            <div className="flex flex-col pb-4 sm:pb-6">
-              <BattleHud
-                playerHp={state.playerHp}
-                enemyHp={state.enemyHp}
-                playerTension={state.playerTension}
-                enemyTension={state.enemyTension}
-                round={state.round}
-                distanceLabel={distanceLabel}
-                phaseTitle={phaseTitle}
-                playerStateText={state.playerStateText}
-                enemyStateText={state.enemyStateText}
-                enemyPersonalityLabel={state.enemyPersonality === "defensive" ? "수비형 상대" : "균형형 상대"}
-                playerBurstUsed={state.playerBurstUsed}
-                enemyBurstUsed={state.enemyBurstUsed}
-              />
-
-              <div className="flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
-                <BattleField
-                  message={state.message}
+            {!isGameOver ? (
+              <div className="flex flex-col pb-4 sm:pb-6">
+                <BattleHud
+                  playerHp={state.playerHp}
+                  enemyHp={state.enemyHp}
+                  playerTension={state.playerTension}
+                  enemyTension={state.enemyTension}
+                  round={state.round}
+                  distanceLabel={distanceLabel}
                   phaseTitle={phaseTitle}
-                  playerRoleInPhase={state.playerRoleInPhase}
-                  playerTile={state.playerTile}
-                  enemyTile={state.enemyTile}
-                  effectText={state.effectText}
+                  playerStateText={state.playerStateText}
+                  enemyStateText={state.enemyStateText}
+                  enemyPersonalityLabel={
+                    state.enemyPersonality === "defensive"
+                      ? "수비형 상대"
+                      : "균형형 상대"
+                  }
+                  playerBurstUsed={state.playerBurstUsed}
+                  enemyBurstUsed={state.enemyBurstUsed}
                 />
 
-                <CommentaryBox commentary={state.commentary} />
+                <div className="flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
+                  <BattleField
+                    message={state.message}
+                    phaseTitle={phaseTitle}
+                    playerRoleInPhase={state.playerRoleInPhase}
+                    playerTile={state.playerTile}
+                    enemyTile={state.enemyTile}
+                    effectText={state.effectText}
+                  />
 
-                {!isGameOver ? (
+                  <CommentaryBox commentary={state.commentary} />
+
                   <ActionCardRow
                     title={selectionTitle}
                     description={selectionDescription}
@@ -320,15 +373,15 @@ export default function Page() {
                     onSelect={handleSelectCard}
                     disabled={isDuelPlaying}
                   />
-                ) : (
-                  <div className="border-t border-zinc-800 bg-black/60 px-4 py-3 sm:px-5">
-                    <div className="text-center text-lg font-black tracking-[0.12em] text-zinc-100 sm:text-2xl sm:tracking-[0.18em]">
-                      {state.enemyHp <= 0 ? "승리! 상대를 쓰러뜨렸다." : "패배... 네가 쓰러졌다."}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <ReviewScreen
+                history={history}
+                didWin={state.enemyHp <= 0}
+                onRestart={handleReset}
+              />
+            )}
           </div>
         </div>
       </main>

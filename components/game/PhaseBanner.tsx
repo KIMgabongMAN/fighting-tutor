@@ -20,7 +20,7 @@ export function PhaseBanner({ banner }: Props) {
     <div className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center overflow-hidden">
       <div
         key={banner.id}
-        className={`phase-banner-anim min-w-[220px] max-w-[88vw] border px-8 py-4 text-center text-xl font-black tracking-[0.18em] [clip-path:polygon(3%_0,100%_0,97%_100%,0_100%)] backdrop-blur-sm sm:text-3xl ${toneClasses[banner.tone]}`}
+        className={`phase-banner-anim min-w-[220px] max-w-[88vw] border px-8 py-4 text-center text-xl font-black tracking-[0.18em] backdrop-blur-sm sm:text-3xl ${toneClasses[banner.tone]}`}
       >
         {banner.text}
       </div>

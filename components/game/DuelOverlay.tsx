@@ -354,7 +354,7 @@ export function DuelOverlay({ playerCard, enemyCard, outcome }: Props) {
 
         <div className="absolute inset-x-0 top-[14%] flex justify-center">
           <div
-            className={`duel-caption border px-8 py-3 text-center text-2xl font-black tracking-[0.18em] [clip-path:polygon(3%_0,100%_0,97%_100%,0_100%)] border-white/30 bg-black/70 ${captionColor} sm:text-4xl`}
+            className={`duel-caption border px-8 py-3 text-center text-2xl font-black tracking-[0.18em] border-white/30 bg-black/70 ${captionColor} sm:text-4xl`}
           >
             {outcomeText(outcome)}
           </div>
@@ -378,7 +378,7 @@ function OverlayCard({
 
   return (
     <div
-      className={`w-[230px] -translate-x-1/2 -translate-y-1/2 border p-4 shadow-[0_0_40px_rgba(0,0,0,0.45)] [clip-path:polygon(0_0,100%_0,96%_100%,0_100%)] sm:w-[290px] sm:p-5 ${borderTone}`}
+      className={`w-[230px] -translate-x-1/2 -translate-y-1/2 border p-4 shadow-[0_0_40px_rgba(0,0,0,0.45)] sm:w-[290px] sm:p-5 ${borderTone}`}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="border border-white/10 bg-black/30 px-3 py-1 text-base font-black text-white sm:text-lg">

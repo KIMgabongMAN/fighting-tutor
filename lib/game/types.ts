@@ -11,44 +11,54 @@ export type PhaseId =
   | "combo";
 
 export type PlayerRoleInPhase = "neutral" | "attacker" | "defender";
-
-export type ResultTag = "승리" | "패배" | "콤보" | "다운";
+export type OpponentPersonality = "balanced" | "defensive" | "aggressive";
+export type DuelOutcome = "player" | "enemy" | "none";
 
 export type CardTag =
-  | "공격"
   | "수비"
   | "잡기"
   | "무적"
-  | "프레임트랩"
-  | "느림"
-  | "빠름"
   | "공중"
   | "지상"
   | "하단"
   | "중단"
   | "이지선다"
-  | "개기기"
   | "캔슬불가"
   | "버스트"
   | "거리조절"
-  | "접근";
+  | "대쉬"
+  | "뉴트럴"
+  | "선공"
+  | "딜레이"
+  | "근거리 공격"
+  | "중거리 공격"
+  | "원거리 공격"
+  | "콤보"
+  | "다운";
 
-export type OpponentPersonality = "balanced" | "defensive" | "aggressive";
-export type DuelOutcome = "player" | "enemy" | "none";
+export type SuccessOutcome =
+  | "pressure"
+  | "combo"
+  | "hardDown"
+  | "neutralByDistance"
+  | "samePhase";
 
 export type CardDefinition = {
   id: string;
-  phase: PhaseId;
-  role: PlayerRoleInPhase;
+  phase: PhaseId | "universal";
+  role: PlayerRoleInPhase | "universal";
   order: string;
   title: string;
   description: string;
   tags: CardTag[];
-  resultTags: ResultTag[];
   color: "red" | "orange" | "gold" | "blue" | "gray";
   groupLabel: string;
   baseWeight: number;
-  moveSelf: number;
+  attackPower: number;
+  grabDamage: number;
+  advance: number;
+  push: number;
+  successOutcome: SuccessOutcome;
 };
 
 export type GameState = {
@@ -70,6 +80,23 @@ export type GameState = {
   enemyPersonality: OpponentPersonality;
   lastPlayerCardId: string | null;
   lastEnemyCardId: string | null;
+  playerBurstUsed: boolean;
+  enemyBurstUsed: boolean;
+};
+
+export type TurnRecord = {
+  turn: number;
+  phaseLabel: string;
+  playerCardTitle: string;
+  enemyCardTitle: string;
+  outcome: DuelOutcome;
+  playerHpBefore: number;
+  playerHpAfter: number;
+  enemyHpBefore: number;
+  enemyHpAfter: number;
+  distanceBefore: string;
+  distanceAfter: string;
+  note: string;
 };
 
 export type PhaseBannerState = {

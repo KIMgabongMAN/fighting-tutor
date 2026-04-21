@@ -17,7 +17,7 @@ export function ActionCardRow({
   disabled = false,
 }: Props) {
   return (
-    <div className="overflow-hidden border border-zinc-700 bg-zinc-950/70 shadow-lg [clip-path:polygon(1%_0,100%_0,99%_100%,0_100%)]">
+    <div className="overflow-hidden border border-zinc-700 bg-zinc-950/70 shadow-lg">
       <div className="border-b border-zinc-800 bg-black/30 px-4 py-3 sm:px-5">
         <div className="mb-1 text-lg font-black text-yellow-100">{title}</div>
         <div className="text-xs text-zinc-400 sm:text-sm">{description}</div>

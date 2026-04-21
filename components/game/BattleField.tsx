@@ -31,21 +31,21 @@ export function BattleField({
       <div className="absolute bottom-20 left-0 right-0 h-[2px] bg-zinc-700 sm:bottom-24" />
 
       <div className="relative z-10 flex items-center justify-between border-b border-zinc-800 bg-black/40 px-4 py-3 sm:px-6 sm:py-4">
-        <div className="border border-zinc-600 bg-zinc-900 px-2 py-1 text-[10px] font-black tracking-[0.22em] text-zinc-300 [clip-path:polygon(0_0,100%_0,90%_100%,0_100%)] sm:px-3 sm:text-xs">
+        <div className="border border-zinc-600 bg-zinc-900 px-2 py-1 text-[10px] font-black tracking-[0.22em] text-zinc-300 sm:px-3 sm:text-xs">
           BATTLE FIELD
         </div>
-        <div className="text-[10px] text-zinc-400 sm:text-sm">학습 전투 시뮬레이션</div>
+        <div className="text-[10px] text-zinc-400 sm:text-sm">의도 카드 시뮬레이션</div>
       </div>
 
       <div className="absolute left-1/2 top-4 z-20 w-full max-w-5xl -translate-x-1/2 px-3 sm:top-6 sm:px-4">
-        <div className="border border-zinc-700 bg-black/55 px-4 py-3 text-center text-sm font-semibold text-zinc-100 shadow-xl backdrop-blur-sm [clip-path:polygon(3%_0,100%_0,97%_100%,0_100%)] sm:px-5 sm:py-4 sm:text-base">
+        <div className="border border-zinc-700 bg-black/55 px-4 py-3 text-center text-sm font-semibold text-zinc-100 shadow-xl backdrop-blur-sm sm:px-5 sm:py-4 sm:text-base">
           {message}
         </div>
       </div>
 
       {effectText ? (
         <div className="absolute left-1/2 top-20 z-30 -translate-x-1/2 sm:top-28">
-          <div className="border border-red-400/60 bg-red-950/80 px-5 py-2 text-sm font-black tracking-[0.18em] text-red-100 shadow-2xl [clip-path:polygon(6%_0,100%_0,94%_100%,0_100%)] sm:px-7 sm:text-xl sm:tracking-[0.22em]">
+          <div className="border border-red-400/60 bg-red-950/80 px-5 py-2 text-sm font-black tracking-[0.18em] text-red-100 shadow-2xl sm:px-7 sm:text-xl sm:tracking-[0.22em]">
             {effectText}
           </div>
         </div>
@@ -53,7 +53,7 @@ export function BattleField({
 
       <div className="relative z-10 min-h-[420px] px-4 pb-28 pt-24 sm:min-h-[620px] sm:px-8 sm:pb-32 sm:pt-28">
         <div className="absolute bottom-[126px] left-1/2 z-20 -translate-x-1/2 sm:bottom-[142px]">
-          <div className="border border-zinc-500 bg-zinc-900/80 px-4 py-2 text-xs font-black tracking-[0.12em] text-zinc-100 shadow-lg [clip-path:polygon(8%_0,100%_0,92%_100%,0_100%)] sm:px-5 sm:text-sm sm:tracking-[0.18em]">
+          <div className="border border-zinc-500 bg-zinc-900/80 px-4 py-2 text-xs font-black tracking-[0.12em] text-zinc-100 shadow-lg sm:px-5 sm:text-sm sm:tracking-[0.18em]">
             {phaseTitle} · {playerRoleInPhase === "attacker" ? "공격자" : playerRoleInPhase === "defender" ? "수비자" : "교전"}
           </div>
         </div>
@@ -67,7 +67,7 @@ export function BattleField({
               return (
                 <div
                   key={i}
-                  className={`relative h-10 border transition-all duration-300 [clip-path:polygon(10%_0,100%_0,90%_100%,0_100%)] sm:h-14 ${
+                  className={`relative h-10 border transition-all duration-300 sm:h-14 ${
                     isPlayerTile
                       ? "border-red-400/70 bg-gradient-to-b from-red-900/40 to-zinc-900 shadow-[0_0_20px_rgba(248,113,113,0.18)]"
                       : isEnemyTile
@@ -90,10 +90,10 @@ export function BattleField({
               className="absolute bottom-0 w-[88px] -translate-x-1/2 sm:w-[150px]"
               style={{ left: playerLeft }}
             >
-              <div className="mb-2 border border-red-500/30 bg-red-950/50 px-2 py-1 text-center text-[10px] font-black tracking-[0.16em] text-red-200 [clip-path:polygon(0_0,100%_0,92%_100%,0_100%)] sm:px-3 sm:text-xs sm:tracking-[0.2em]">
+              <div className="mb-2 border border-red-500/30 bg-red-950/50 px-2 py-1 text-center text-[10px] font-black tracking-[0.16em] text-red-200 sm:px-3 sm:text-xs sm:tracking-[0.2em]">
                 PLAYER
               </div>
-              <div className="flex h-[130px] items-center justify-center border border-red-900/60 bg-red-950/40 text-center text-sm font-bold [clip-path:polygon(0_0,100%_0,92%_100%,0_100%)] sm:h-[220px] sm:text-lg">
+              <div className="flex h-[130px] items-center justify-center border border-red-900/60 bg-red-950/40 text-center text-sm font-bold sm:h-[220px] sm:text-lg">
                 내 캐릭터
               </div>
             </div>
@@ -102,10 +102,10 @@ export function BattleField({
               className="absolute bottom-0 w-[88px] -translate-x-1/2 sm:w-[150px]"
               style={{ left: enemyLeft }}
             >
-              <div className="mb-2 border border-yellow-500/30 bg-yellow-950/40 px-2 py-1 text-center text-[10px] font-black tracking-[0.16em] text-yellow-100 [clip-path:polygon(8%_0,100%_0,100%_100%,0_100%)] sm:px-3 sm:text-xs sm:tracking-[0.2em]">
+              <div className="mb-2 border border-yellow-500/30 bg-yellow-950/40 px-2 py-1 text-center text-[10px] font-black tracking-[0.16em] text-yellow-100 sm:px-3 sm:text-xs sm:tracking-[0.2em]">
                 ENEMY
               </div>
-              <div className="flex h-[130px] items-center justify-center border border-yellow-700/60 bg-yellow-950/30 text-center text-sm font-bold [clip-path:polygon(8%_0,100%_0,100%_100%,0_100%)] sm:h-[220px] sm:text-lg">
+              <div className="flex h-[130px] items-center justify-center border border-yellow-700/60 bg-yellow-950/30 text-center text-sm font-bold sm:h-[220px] sm:text-lg">
                 상대 캐릭터
               </div>
             </div>
