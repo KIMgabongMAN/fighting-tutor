@@ -87,10 +87,7 @@ function isMeaty(card: CardDefinition) {
 }
 
 function isWakeupDefenderCard(card: CardDefinition) {
-  return (
-    card.phase === "hardDown" &&
-    card.role === "defender"
-  );
+  return card.phase === "hardDown" && card.role === "defender";
 }
 
 function applyAdvance(
@@ -324,7 +321,6 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     commentary = "무적기 적중 후엔 흐름이 교전 쪽으로 강제 리셋되기 쉽다.";
   }
 
-  // 하드다운 기상 공통 규칙
   else if (isMeaty(playerCard) && isWakeupDefenderCard(enemyCard) && !isInvincible(enemyCard) && !hasDefenseTag(enemyCard)) {
     winner = "player";
     winningCard = playerCard;
@@ -403,17 +399,53 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     message = "상대 프레임 트랩이 네 딜레이 선택을 잡아냈다.";
     commentary = "반항이나 대쉬류는 프레임 트랩에 걸릴 수 있다.";
   } else if (playerCard.id === "pressure_frame" && !enemyCard.tags.includes("딜레이")) {
-    winner = "player";
-    winningCard = playerCard;
-    effectText = "압박 종료";
-    message = "프레임 트랩이 히트는 아니었지만 상대를 밀어내며 압박을 정리했다.";
-    commentary = "딜레이가 아니면 프레임 트랩은 큰 리턴 대신 흐름 정리용으로 끝난다.";
+    const pushed = pushOpponent("player", nextPlayerTile, nextEnemyTile, 1);
+
+    return {
+      ...buildResult(
+        currentState,
+        "none",
+        null,
+        nextPlayerHp,
+        nextEnemyHp,
+        pushed.nextPlayerTile,
+        pushed.nextEnemyTile,
+        "프레임트랩이 히트는 아니었지만 상대를 밀어내며 압박을 정리했다.",
+        "딜레이가 아니면 프레임트랩은 콤보로 이어지지 않고, 거리만 정리한 뒤 교전으로 복귀한다.",
+        "압박 종료"
+      ),
+      nextPhase: deriveNeutralPhaseFromTiles(
+        pushed.nextPlayerTile,
+        pushed.nextEnemyTile
+      ),
+      nextPlayerRoleInPhase: "neutral",
+      nextPlayerStateText: "뉴트럴",
+      nextEnemyStateText: "뉴트럴",
+    };
   } else if (enemyCard.id === "pressure_frame" && !playerCard.tags.includes("딜레이")) {
-    winner = "enemy";
-    winningCard = enemyCard;
-    effectText = "압박 종료";
-    message = "상대 프레임 트랩이 너를 밀어내며 압박을 정리했다.";
-    commentary = "딜레이가 아닌 선택엔 프레임 트랩이 압박 종료용으로 작동한다.";
+    const pushed = pushOpponent("enemy", nextPlayerTile, nextEnemyTile, 1);
+
+    return {
+      ...buildResult(
+        currentState,
+        "none",
+        null,
+        nextPlayerHp,
+        nextEnemyHp,
+        pushed.nextPlayerTile,
+        pushed.nextEnemyTile,
+        "상대 프레임트랩이 히트는 아니었지만 너를 밀어내며 압박을 정리했다.",
+        "딜레이가 아니면 프레임트랩은 콤보로 이어지지 않고, 거리만 정리한 뒤 교전으로 복귀한다.",
+        "압박 종료"
+      ),
+      nextPhase: deriveNeutralPhaseFromTiles(
+        pushed.nextPlayerTile,
+        pushed.nextEnemyTile
+      ),
+      nextPlayerRoleInPhase: "neutral",
+      nextPlayerStateText: "뉴트럴",
+      nextEnemyStateText: "뉴트럴",
+    };
   } else if (playerCard.id === "defend_abare" && finalGap !== 0) {
     winner = "enemy";
     winningCard = enemyCard;
