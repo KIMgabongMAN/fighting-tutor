@@ -48,28 +48,18 @@ export function ActionCard({ card, onSelect, disabled = false }: Props) {
         ))}
       </div>
 
-      <div className="mb-4 min-h-[132px] text-sm leading-6 text-zinc-200">{card.description}</div>
+      <div className="mb-4 min-h-[110px] text-sm leading-6 text-zinc-200">{card.description}</div>
 
-      <div className="mb-2 text-xs font-black tracking-[0.2em] text-zinc-400">결과 태그</div>
-
-      <div className="mb-3 flex flex-wrap gap-2">
-        {card.resultTags.length > 0 ? (
-          card.resultTags.map((tag) => (
-            <span
-              key={`${card.id}-result-${tag}`}
-              className="border border-yellow-500/30 bg-yellow-950/40 px-2 py-1 text-xs font-black tracking-[0.08em] text-yellow-100"
-            >
-              {tag}
-            </span>
-          ))
-        ) : (
-          <span className="border border-zinc-700 bg-black/20 px-2 py-1 text-xs font-black text-zinc-400">
-            없음
-          </span>
-        )}
+      <div className="grid grid-cols-2 gap-2 text-xs text-zinc-300">
+        <div className="border border-white/10 bg-black/20 px-2 py-1">공격력: {card.attackPower}</div>
+        <div className="border border-white/10 bg-black/20 px-2 py-1">잡기 데미지: {card.grabDamage}</div>
+        <div className="border border-white/10 bg-black/20 px-2 py-1">
+          전진: {card.advance > 0 ? `+${card.advance}` : card.advance}
+        </div>
+        <div className="border border-white/10 bg-black/20 px-2 py-1">
+          밀어내기: {card.push > 0 ? `+${card.push}` : card.push}
+        </div>
       </div>
-
-      <div className="text-xs text-zinc-400">이동: {card.moveSelf > 0 ? `+${card.moveSelf}` : card.moveSelf}</div>
     </button>
   );
 }

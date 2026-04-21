@@ -7,8 +7,12 @@ import { BattleHud } from "@/components/game/BattleHud";
 import { CommentaryBox } from "@/components/game/CommentaryBox";
 import { DuelOverlay } from "@/components/game/DuelOverlay";
 import { PhaseBanner } from "@/components/game/PhaseBanner";
-import { PHASE_META, getCardsForPhase } from "@/lib/game/data";
-import { resolvePhaseTurn, deriveDistanceLabel } from "@/lib/game/phase";
+import {
+  PHASE_META,
+  UNIVERSAL_BURST_CARD,
+  getCardsForPhase,
+} from "@/lib/game/data";
+import { deriveDistanceLabel, resolvePhaseTurn } from "@/lib/game/phase";
 import { pickWeightedRandomCard } from "@/lib/game/random";
 import type {
   CardDefinition,
@@ -27,6 +31,16 @@ const INITIAL_ENEMY_TILE = 4;
 const ENEMY_PERSONALITY: OpponentPersonality = "defensive";
 const DUEL_ANIMATION_MS = 4800;
 
+function buildCardPool(
+  phase: PhaseId,
+  role: PlayerRoleInPhase,
+  canUseBurst: boolean
+) {
+  const cards = [...getCardsForPhase(phase, role)];
+  if (canUseBurst) cards.push(UNIVERSAL_BURST_CARD);
+  return cards;
+}
+
 export default function Page() {
   const [state, setState] = useState<GameState>({
     playerHp: 100,
@@ -39,15 +53,17 @@ export default function Page() {
     playerRoleInPhase: "neutral",
     playerStateText: "뉴트럴",
     enemyStateText: "뉴트럴",
-    message: "개막 상황이다. 신중히 첫 선택을 골라 이후 흐름을 정하자.",
+    message: "개막이다. 의도를 고르고, 거리와 국면의 흐름을 먼저 잡아라.",
     commentary:
-      "현재 국면에 따라 네 카드만 아래에 표시된다. 상대는 보이지 않게 자기 카드 풀 안에서 가중치 랜덤으로 선택한다.",
+      "v2는 세부 조작 대신 의도 카드 중심으로 진행된다. 상대도 같은 방식으로 카드를 고른다.",
     turn: 1,
     round: 1,
     effectText: "",
     enemyPersonality: ENEMY_PERSONALITY,
     lastPlayerCardId: null,
     lastEnemyCardId: null,
+    playerBurstUsed: false,
+    enemyBurstUsed: false,
   });
 
   const [banner, setBanner] = useState<PhaseBannerState | null>(null);
@@ -57,8 +73,8 @@ export default function Page() {
   const duelApplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentCards = useMemo(() => {
-    return getCardsForPhase(state.phase, state.playerRoleInPhase);
-  }, [state.phase, state.playerRoleInPhase]);
+    return buildCardPool(state.phase, state.playerRoleInPhase, !state.playerBurstUsed);
+  }, [state.phase, state.playerRoleInPhase, state.playerBurstUsed]);
 
   const phaseTitle = useMemo(() => PHASE_META[state.phase]?.label ?? "국면", [state.phase]);
 
@@ -121,6 +137,8 @@ export default function Page() {
       turn: prev.turn + 1,
       lastPlayerCardId: playerCard.id,
       lastEnemyCardId: enemyCard.id,
+      playerBurstUsed: prev.playerBurstUsed || playerCard.id === UNIVERSAL_BURST_CARD.id,
+      enemyBurstUsed: prev.enemyBurstUsed || enemyCard.id === UNIVERSAL_BURST_CARD.id,
     }));
 
     setDuelOverlay(null);
@@ -130,7 +148,7 @@ export default function Page() {
   const handleSelectCard = (playerCard: CardDefinition) => {
     if (isGameOver || isDuelPlaying) return;
 
-    const enemyCards = getCardsForPhase(state.phase, enemyRole);
+    const enemyCards = buildCardPool(state.phase, enemyRole, !state.enemyBurstUsed);
 
     const enemyCard = pickWeightedRandomCard({
       cards: enemyCards,
@@ -177,15 +195,17 @@ export default function Page() {
       playerRoleInPhase: "neutral",
       playerStateText: "뉴트럴",
       enemyStateText: "뉴트럴",
-      message: "개막 상황이다. 신중히 첫 선택을 골라 이후 흐름을 정하자.",
+      message: "개막이다. 의도를 고르고, 거리와 국면의 흐름을 먼저 잡아라.",
       commentary:
-        "현재 국면에 따라 네 카드만 아래에 표시된다. 상대는 보이지 않게 자기 카드 풀 안에서 가중치 랜덤으로 선택한다.",
+        "v2는 세부 조작 대신 의도 카드 중심으로 진행된다. 상대도 같은 방식으로 카드를 고른다.",
       turn: 1,
       round: 1,
       effectText: "",
       enemyPersonality: ENEMY_PERSONALITY,
       lastPlayerCardId: null,
       lastEnemyCardId: null,
+      playerBurstUsed: false,
+      enemyBurstUsed: false,
     });
 
     showBanner("opening");
@@ -194,19 +214,19 @@ export default function Page() {
   const selectionTitle = useMemo(() => {
     if (state.playerRoleInPhase === "attacker") return "공격자 선택지";
     if (state.playerRoleInPhase === "defender") return "수비자 선택지";
-    return "개막 / 교전 선택지";
+    return "뉴트럴 선택지";
   }, [state.playerRoleInPhase]);
 
   const selectionDescription = useMemo(() => {
     if (state.playerRoleInPhase === "attacker") {
-      return "이번 국면에서 네가 먼저 유리한 흐름을 잡았다. 공격자 카드만 표시된다.";
+      return "지금은 네가 흐름을 쥐고 있다. 압박의 방향을 고르자.";
     }
 
     if (state.playerRoleInPhase === "defender") {
-      return "이번 국면에서 네가 수세에 있다. 수비자 카드만 표시된다.";
+      return "지금은 수세다. 버틸지, 탈출할지, 뒤집을지 고르자.";
     }
 
-    return "개막과 일반 교전에서는 중립 카드로 먼저 승부를 만든다.";
+    return "세부 행동이 아니라 의도를 선택한다. 거리 변화는 먼저 반영되고, 그 후 승패를 판정한다.";
   }, [state.playerRoleInPhase]);
 
   return (
@@ -240,7 +260,7 @@ export default function Page() {
         <div className="mx-auto w-full max-w-[1700px]">
           <div className="mb-3 flex items-center justify-between sm:mb-4">
             <div className="text-[10px] font-black tracking-[0.28em] text-zinc-500 sm:text-xs">
-              TRAINING BUILD
+              TRAINING BUILD V2
             </div>
 
             <button
@@ -276,6 +296,8 @@ export default function Page() {
                 playerStateText={state.playerStateText}
                 enemyStateText={state.enemyStateText}
                 enemyPersonalityLabel={state.enemyPersonality === "defensive" ? "수비형 상대" : "균형형 상대"}
+                playerBurstUsed={state.playerBurstUsed}
+                enemyBurstUsed={state.enemyBurstUsed}
               />
 
               <div className="flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
