@@ -321,7 +321,7 @@ export default function Page() {
           </div>
 
           <div className="relative w-full rounded-[20px] border border-zinc-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 shadow-[0_0_60px_rgba(0,0,0,0.65)] sm:rounded-[28px]">
-            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
+            <div className="pointer-events-none absolute inset-0 opacity-20 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
 
             {banner && <PhaseBanner banner={banner} />}
 
@@ -334,7 +334,7 @@ export default function Page() {
             )}
 
             {!isGameOver ? (
-              <div className="flex flex-col pb-4 sm:pb-6">
+              <div className="relative z-10 flex flex-col pb-4 sm:pb-6">
                 <BattleHud
                   playerHp={state.playerHp}
                   enemyHp={state.enemyHp}
@@ -376,11 +376,13 @@ export default function Page() {
                 </div>
               </div>
             ) : (
-              <ReviewScreen
-                history={history}
-                didWin={state.enemyHp <= 0}
-                onRestart={handleReset}
-              />
+              <div className="relative z-10">
+                <ReviewScreen
+                  history={history}
+                  didWin={state.enemyHp <= 0}
+                  onRestart={handleReset}
+                />
+              </div>
             )}
           </div>
         </div>
