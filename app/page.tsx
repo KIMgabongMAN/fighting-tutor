@@ -314,17 +314,16 @@ export default function Page() {
 
             <button
               onClick={handleReset}
-              className="rounded-md border border-zinc-500 bg-zinc-900 px-3 py-2 text-[11px] font-black tracking-[0.12em] hover:border-white sm:text-sm"
+              className="relative z-30 rounded-md border border-zinc-500 bg-zinc-900 px-3 py-2 text-[11px] font-black tracking-[0.12em] hover:border-white sm:text-sm"
             >
               다시 시작
             </button>
           </div>
 
-          <div className="relative w-full rounded-[20px] border border-zinc-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 shadow-[0_0_60px_rgba(0,0,0,0.65)] sm:rounded-[28px]">
-            <div className="pointer-events-none absolute inset-0 opacity-20 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
+          <div className="relative w-full overflow-hidden rounded-[20px] border border-zinc-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 shadow-[0_0_60px_rgba(0,0,0,0.65)] sm:rounded-[28px]">
+            <div className="pointer-events-none absolute inset-0 z-0 opacity-20 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
 
             {banner && <PhaseBanner banner={banner} />}
-
             {duelOverlay && (
               <DuelOverlay
                 playerCard={duelOverlay.playerCard}
@@ -354,7 +353,7 @@ export default function Page() {
                   enemyBurstUsed={state.enemyBurstUsed}
                 />
 
-                <div className="flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
+                <div className="relative z-20 flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
                   <BattleField
                     message={state.message}
                     phaseTitle={phaseTitle}
@@ -376,7 +375,7 @@ export default function Page() {
                 </div>
               </div>
             ) : (
-              <div className="relative z-10">
+              <div className="relative z-20">
                 <ReviewScreen
                   history={history}
                   didWin={state.enemyHp <= 0}

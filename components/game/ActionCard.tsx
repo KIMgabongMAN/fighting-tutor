@@ -20,9 +20,10 @@ export function ActionCard({ card, onSelect, disabled = false }: Props) {
 
   return (
     <button
+      type="button"
       onClick={() => onSelect(card)}
       disabled={disabled}
-      className={`group w-[260px] shrink-0 rounded-md border bg-gradient-to-b ${toneClass} p-4 text-left transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-40 sm:w-[300px] sm:p-5`}
+      className={`relative z-40 w-[260px] shrink-0 rounded-md border bg-gradient-to-b ${toneClass} p-4 text-left transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-40 sm:w-[300px] sm:p-5`}
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
