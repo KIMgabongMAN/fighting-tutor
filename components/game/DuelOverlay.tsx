@@ -79,14 +79,14 @@ export function DuelOverlay({ playerCard, enemyCard, outcome }: Props) {
           100% { opacity: 0; transform: translateY(10px) scale(0.98); }
         }
 
-        .dim { animation: dimIn 0.18s ease forwards; }
-        .duel-card-left-win { animation: cardLeftWin 2.2s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-left-lose { animation: cardLeftLose 2.2s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-left-pass { animation: cardLeftPass 2.2s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-right-win { animation: cardRightWin 2.2s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-right-lose { animation: cardRightLose 2.2s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-right-pass { animation: cardRightPass 2.2s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .caption { animation: captionShow 2.2s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
+        .dim { animation: dimIn 0.3s ease forwards; }
+        .duel-card-left-win { animation: cardLeftWin 6.6s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
+        .duel-card-left-lose { animation: cardLeftLose 6.6s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
+        .duel-card-left-pass { animation: cardLeftPass 6.6s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
+        .duel-card-right-win { animation: cardRightWin 6.6s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
+        .duel-card-right-lose { animation: cardRightLose 6.6s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
+        .duel-card-right-pass { animation: cardRightPass 6.6s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
+        .caption { animation: captionShow 6.6s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
       `}</style>
 
       <div className="pointer-events-none absolute inset-0 z-[120] overflow-hidden">

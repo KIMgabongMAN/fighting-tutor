@@ -33,7 +33,7 @@ import type {
 const INITIAL_PLAYER_X = 2;
 const INITIAL_ENEMY_X = 6;
 const ENEMY_PERSONALITY: OpponentPersonality = "defensive";
-const DUEL_ANIMATION_MS = 2200;
+const DUEL_ANIMATION_MS = 6600;
 
 function buildCardPool(
   phase: PhaseId,
@@ -436,7 +436,7 @@ export default function Page() {
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto">
-                  <div className="flex flex-col gap-3 p-3 sm:gap-3 sm:p-3">
+                  <div className="flex flex-col gap-3 p-3">
                     <BattleField
                       message={state.message}
                       phaseTitle={phaseTitle}
