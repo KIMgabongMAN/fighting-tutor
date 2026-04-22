@@ -3,6 +3,7 @@ import type { CardDefinition } from "@/lib/game/types";
 type Props = {
   card: CardDefinition;
   onSelect: (card: CardDefinition) => void;
+  onHoverCard?: (card: CardDefinition | null) => void;
   disabled?: boolean;
 };
 
@@ -15,17 +16,30 @@ const toneClassMap: Record<string, string> = {
   gray: "from-zinc-800 to-zinc-950 border-zinc-600 hover:border-zinc-400",
 };
 
-export function ActionCard({ card, onSelect, disabled = false }: Props) {
+function rangeText(card: CardDefinition) {
+  if (card.rangeMax < 0) return "비타격";
+  return `${card.rangeMin}~${card.rangeMax}`;
+}
+
+function laneText(card: CardDefinition) {
+  if (card.laneTarget === "both") return "지상/공중";
+  return card.laneTarget === "ground" ? "지상" : "공중";
+}
+
+export function ActionCard({
+  card,
+  onSelect,
+  onHoverCard,
+  disabled = false,
+}: Props) {
   const toneClass = toneClassMap[card.color] ?? toneClassMap.gray;
-  const rangeText =
-    card.rangeMax < 0
-      ? "비타격"
-      : `${card.rangeMin}~${card.rangeMax}`;
 
   return (
     <button
       type="button"
       onClick={() => onSelect(card)}
+      onMouseEnter={() => onHoverCard?.(card)}
+      onMouseLeave={() => onHoverCard?.(null)}
       disabled={disabled}
       className={`relative z-40 w-[260px] shrink-0 rounded-md border bg-gradient-to-b ${toneClass} p-4 text-left transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-40 sm:w-[300px] sm:p-5`}
     >
@@ -38,7 +52,11 @@ export function ActionCard({ card, onSelect, disabled = false }: Props) {
             {card.groupLabel}
           </div>
         </div>
-        <div className="text-sm font-black text-zinc-400">{card.order}</div>
+        {card.tensionCost ? (
+          <div className="rounded-sm border border-yellow-500/40 bg-yellow-950/40 px-2 py-1 text-[11px] font-black text-yellow-200">
+            T {card.tensionCost}
+          </div>
+        ) : null}
       </div>
 
       <div className="mb-3 text-2xl font-black leading-tight text-white">
@@ -56,25 +74,22 @@ export function ActionCard({ card, onSelect, disabled = false }: Props) {
         ))}
       </div>
 
-      <div className="mb-4 min-h-[110px] text-sm leading-6 text-zinc-200">
+      <div className="mb-4 min-h-[90px] text-sm leading-6 text-zinc-200">
         {card.description}
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs text-zinc-300">
-        <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
-          공격력: {card.attackPower}
-        </div>
-        <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
-          잡기 데미지: {card.grabDamage}
-        </div>
         <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
           전진: {card.advance > 0 ? `+${card.advance}` : card.advance}
         </div>
         <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
           밀어내기: {card.push > 0 ? `+${card.push}` : card.push}
         </div>
-        <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1 col-span-2">
-          유효 거리: {rangeText}
+        <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
+          공격 범위: {rangeText(card)}
+        </div>
+        <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
+          타깃 줄: {laneText(card)}
         </div>
       </div>
     </button>

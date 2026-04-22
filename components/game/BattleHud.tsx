@@ -1,6 +1,6 @@
 type Props = {
-  playerHp: number;
-  enemyHp: number;
+  playerHeartsHalf: number;
+  enemyHeartsHalf: number;
   playerTension: number;
   enemyTension: number;
   round: number;
@@ -32,9 +32,32 @@ function fighterStateClass(state: string) {
   }
 }
 
+function HeartMeter({ halfUnits }: { halfUnits: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: 4 }, (_, index) => {
+        const remaining = Math.max(0, halfUnits - index * 2);
+        const fill = remaining >= 2 ? 100 : remaining === 1 ? 50 : 0;
+
+        return (
+          <div key={index} className="relative text-2xl leading-none sm:text-3xl">
+            <span className="text-zinc-700">♥</span>
+            <span
+              className="absolute inset-0 overflow-hidden text-red-500"
+              style={{ width: `${fill}%` }}
+            >
+              ♥
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function BattleHud({
-  playerHp,
-  enemyHp,
+  playerHeartsHalf,
+  enemyHeartsHalf,
   playerTension,
   enemyTension,
   round,
@@ -60,11 +83,8 @@ export function BattleHud({
               <div className="text-xs text-zinc-400 sm:text-sm">격투 입문자</div>
             </div>
 
-            <div className="h-6 w-full overflow-hidden border border-zinc-700 bg-zinc-800 sm:h-8">
-              <div
-                className="h-full bg-gradient-to-r from-red-700 to-red-500 transition-all duration-300"
-                style={{ width: `${playerHp}%` }}
-              />
+            <div className="mb-2">
+              <HeartMeter halfUnits={playerHeartsHalf} />
             </div>
 
             <div className="mt-2 flex items-center gap-2 sm:gap-3">
@@ -75,7 +95,9 @@ export function BattleHud({
                   style={{ width: `${playerTension}%` }}
                 />
               </div>
-              <div className="w-8 text-right text-xs font-bold text-zinc-200 sm:w-10 sm:text-sm">{playerHp}</div>
+              <div className="w-10 text-right text-xs font-bold text-zinc-200 sm:text-sm">
+                {playerTension}
+              </div>
             </div>
           </div>
 
@@ -97,15 +119,12 @@ export function BattleHud({
               </div>
             </div>
 
-            <div className="h-6 w-full overflow-hidden border border-zinc-700 bg-zinc-800 sm:h-8">
-              <div
-                className="ml-auto h-full bg-gradient-to-l from-yellow-600 to-yellow-400 transition-all duration-300"
-                style={{ width: `${enemyHp}%` }}
-              />
+            <div className="mb-2 flex justify-end">
+              <HeartMeter halfUnits={enemyHeartsHalf} />
             </div>
 
             <div className="mt-2 flex items-center gap-2 sm:gap-3">
-              <div className="w-8 text-xs font-bold text-zinc-200 sm:w-10 sm:text-sm">{enemyHp}</div>
+              <div className="w-10 text-xs font-bold text-zinc-200 sm:text-sm">{enemyTension}</div>
               <div className="h-2.5 flex-1 overflow-hidden border border-zinc-700 bg-zinc-800 sm:h-3">
                 <div
                   className="ml-auto h-full bg-gradient-to-l from-yellow-800 to-yellow-300 transition-all duration-300"

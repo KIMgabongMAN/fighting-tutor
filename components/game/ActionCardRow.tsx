@@ -6,6 +6,7 @@ type Props = {
   description: string;
   cards: CardDefinition[];
   onSelect: (card: CardDefinition) => void;
+  onHoverCard?: (card: CardDefinition | null) => void;
   disabled?: boolean;
 };
 
@@ -14,6 +15,7 @@ export function ActionCardRow({
   description,
   cards,
   onSelect,
+  onHoverCard,
   disabled = false,
 }: Props) {
   return (
@@ -30,6 +32,7 @@ export function ActionCardRow({
               key={card.id}
               card={card}
               onSelect={onSelect}
+              onHoverCard={onHoverCard}
               disabled={disabled}
             />
           ))}

@@ -1,4 +1,8 @@
-import type { CardDefinition, OpponentPersonality, WeightedPickArgs } from "@/lib/game/types";
+import type {
+  CardDefinition,
+  OpponentPersonality,
+  WeightedPickArgs,
+} from "@/lib/game/types";
 
 function hasAttackLike(card: CardDefinition) {
   return card.tags.some((tag) => tag.includes("공격"));
@@ -7,18 +11,18 @@ function hasAttackLike(card: CardDefinition) {
 function personalityBonus(card: CardDefinition, personality: OpponentPersonality) {
   if (personality === "defensive") {
     let bonus = 0;
-    if (card.tags.includes("수비")) bonus += 6;
-    if (card.tags.includes("거리조절")) bonus += 4;
+    if (card.tags.includes("수비")) bonus += 5;
+    if (card.tags.includes("거리조절")) bonus += 3;
     if (card.tags.includes("무적")) bonus -= 1;
-    if (hasAttackLike(card)) bonus -= 2;
+    if (hasAttackLike(card)) bonus -= 1;
     return bonus;
   }
 
   if (personality === "aggressive") {
     let bonus = 0;
-    if (hasAttackLike(card)) bonus += 5;
-    if (card.tags.includes("대쉬")) bonus += 4;
-    if (card.tags.includes("수비")) bonus -= 3;
+    if (hasAttackLike(card)) bonus += 4;
+    if (card.tags.includes("대쉬")) bonus += 3;
+    if (card.tags.includes("수비")) bonus -= 2;
     return bonus;
   }
 
@@ -29,17 +33,20 @@ function situationalBonus(args: WeightedPickArgs, card: CardDefinition) {
   const { state, role } = args;
   let bonus = 0;
 
-  const gap = Math.max(0, state.enemyTile - state.playerTile - 1);
+  const gap = Math.max(0, state.enemyX - state.playerX - 1);
 
   if (gap >= 4) {
-    if (card.tags.includes("대쉬")) bonus += 5;
     if (card.tags.includes("원거리 공격")) bonus += 3;
+    if (card.tags.includes("대쉬")) bonus += 4;
   }
 
   if (gap === 0) {
-    if (card.tags.includes("잡기")) bonus += 4;
-    if (card.tags.includes("근거리 공격")) bonus += 3;
-    if (card.tags.includes("공중")) bonus -= 1;
+    if (card.tags.includes("잡기")) bonus += 3;
+    if (card.tags.includes("근거리 공격")) bonus += 2;
+  }
+
+  if (state.enemyLane === "air" && card.laneTarget === "air") {
+    bonus += 4;
   }
 
   if (state.phase === "pressure" && role === "defender") {

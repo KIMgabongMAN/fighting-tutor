@@ -12,6 +12,8 @@ import {
   FORCED_VULNERABLE_CARD,
   PHASE_META,
   TILE_COUNT,
+  TOTAL_HEARTS_HALF,
+  UNIVERSAL_AWAKENING_CARD,
   UNIVERSAL_BURST_CARD,
   getCardsForPhase,
 } from "@/lib/game/data";
@@ -30,18 +32,20 @@ import type {
   TurnRecord,
 } from "@/lib/game/types";
 
-const INITIAL_PLAYER_TILE = 1;
-const INITIAL_ENEMY_TILE = 5;
+const INITIAL_PLAYER_X = 1;
+const INITIAL_ENEMY_X = 5;
 const ENEMY_PERSONALITY: OpponentPersonality = "defensive";
 const DUEL_ANIMATION_MS = 4800;
 
 function buildCardPool(
   phase: PhaseId,
   role: PlayerRoleInPhase,
-  canUseBurst: boolean
+  canUseBurst: boolean,
+  canUseAwakening: boolean
 ) {
   const cards = [...getCardsForPhase(phase, role)];
   if (canUseBurst) cards.push(UNIVERSAL_BURST_CARD);
+  if (canUseAwakening) cards.push(UNIVERSAL_AWAKENING_CARD);
   return cards;
 }
 
@@ -57,31 +61,33 @@ function buildTurnRecord(
     playerCardTitle: playerCard.title,
     enemyCardTitle: enemyCard.title,
     outcome: result.duelOutcome,
-    playerHpBefore: prevState.playerHp,
-    playerHpAfter: result.nextPlayerHp,
-    enemyHpBefore: prevState.enemyHp,
-    enemyHpAfter: result.nextEnemyHp,
-    distanceBefore: deriveDistanceLabel(prevState.playerTile, prevState.enemyTile),
-    distanceAfter: deriveDistanceLabel(result.nextPlayerTile, result.nextEnemyTile),
+    playerLifeBefore: prevState.playerHeartsHalf,
+    playerLifeAfter: result.nextPlayerHeartsHalf,
+    enemyLifeBefore: prevState.enemyHeartsHalf,
+    enemyLifeAfter: result.nextEnemyHeartsHalf,
+    distanceBefore: deriveDistanceLabel(prevState.playerX, prevState.enemyX),
+    distanceAfter: deriveDistanceLabel(result.nextPlayerX, result.nextEnemyX),
     note: result.effectText || result.message,
   };
 }
 
 export default function Page() {
   const [state, setState] = useState<GameState>({
-    playerHp: 100,
-    enemyHp: 100,
+    playerHeartsHalf: TOTAL_HEARTS_HALF,
+    enemyHeartsHalf: TOTAL_HEARTS_HALF,
     playerTension: 0,
     enemyTension: 0,
-    playerTile: INITIAL_PLAYER_TILE,
-    enemyTile: INITIAL_ENEMY_TILE,
+    playerX: INITIAL_PLAYER_X,
+    enemyX: INITIAL_ENEMY_X,
+    playerLane: "ground",
+    enemyLane: "ground",
     phase: "opening",
     playerRoleInPhase: "neutral",
     playerStateText: "뉴트럴",
     enemyStateText: "뉴트럴",
-    message: "개막이다. 의도를 고르고, 거리와 국면의 흐름을 먼저 잡아라.",
+    message: "개막이다. 거리와 줄(공중/지상)을 먼저 읽어라.",
     commentary:
-      "1x7 필드 기준으로 거리와 리치를 먼저 계산한다. 잡기와 무적기는 실패하면 무방비 상태가 된다.",
+      "이번 버전은 하트 4개 체력과 2x7 평면 전장 기준으로 진행된다.",
     turn: 1,
     round: 1,
     effectText: "",
@@ -97,18 +103,30 @@ export default function Page() {
   const [history, setHistory] = useState<TurnRecord[]>([]);
   const [banner, setBanner] = useState<PhaseBannerState | null>(null);
   const [duelOverlay, setDuelOverlay] = useState<DuelOverlayState | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<CardDefinition | null>(null);
 
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const duelApplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const canUsePlayerAwakening = state.playerTension >= 50;
+  const canUseEnemyAwakening = state.enemyTension >= 50;
 
   const currentCards = useMemo(() => {
     if (state.playerVulnerable) return [];
     return buildCardPool(
       state.phase,
       state.playerRoleInPhase,
-      !state.playerBurstUsed
-    );
-  }, [state.phase, state.playerRoleInPhase, state.playerBurstUsed, state.playerVulnerable]);
+      !state.playerBurstUsed,
+      canUsePlayerAwakening
+    ).filter((card) => (card.tensionCost ?? 0) <= state.playerTension);
+  }, [
+    state.phase,
+    state.playerRoleInPhase,
+    state.playerBurstUsed,
+    state.playerVulnerable,
+    canUsePlayerAwakening,
+    state.playerTension,
+  ]);
 
   const phaseTitle = useMemo(
     () => PHASE_META[state.phase]?.label ?? "국면",
@@ -116,8 +134,8 @@ export default function Page() {
   );
 
   const distanceLabel = useMemo(() => {
-    return deriveDistanceLabel(state.playerTile, state.enemyTile);
-  }, [state.playerTile, state.enemyTile]);
+    return deriveDistanceLabel(state.playerX, state.enemyX);
+  }, [state.playerX, state.enemyX]);
 
   const enemyRole: PlayerRoleInPhase = useMemo(() => {
     if (state.playerRoleInPhase === "attacker") return "defender";
@@ -125,7 +143,7 @@ export default function Page() {
     return "neutral";
   }, [state.playerRoleInPhase]);
 
-  const isGameOver = state.playerHp <= 0 || state.enemyHp <= 0;
+  const isGameOver = state.playerHeartsHalf <= 0 || state.enemyHeartsHalf <= 0;
   const isDuelPlaying = duelOverlay !== null;
 
   const showBanner = (phase: PhaseId) => {
@@ -152,23 +170,26 @@ export default function Page() {
   }, []);
 
   const applyResolvedResult = (
+    prevState: GameState,
     result: ResolutionResult,
     playerCard: CardDefinition,
     enemyCard: CardDefinition
   ) => {
     setHistory((prev) => [
       ...prev,
-      buildTurnRecord(state, result, playerCard, enemyCard),
+      buildTurnRecord(prevState, result, playerCard, enemyCard),
     ]);
 
     setState((prev) => ({
       ...prev,
-      playerHp: result.nextPlayerHp,
-      enemyHp: result.nextEnemyHp,
+      playerHeartsHalf: result.nextPlayerHeartsHalf,
+      enemyHeartsHalf: result.nextEnemyHeartsHalf,
       playerTension: result.nextPlayerTension,
       enemyTension: result.nextEnemyTension,
-      playerTile: result.nextPlayerTile,
-      enemyTile: result.nextEnemyTile,
+      playerX: result.nextPlayerX,
+      enemyX: result.nextEnemyX,
+      playerLane: result.nextPlayerLane,
+      enemyLane: result.nextEnemyLane,
       phase: result.nextPhase,
       playerRoleInPhase: result.nextPlayerRoleInPhase,
       playerStateText: result.nextPlayerStateText,
@@ -188,16 +209,19 @@ export default function Page() {
     }));
 
     setDuelOverlay(null);
+    setHoveredCard(null);
 
-    const willGameEnd = result.nextPlayerHp <= 0 || result.nextEnemyHp <= 0;
+    const willGameEnd =
+      result.nextPlayerHeartsHalf <= 0 || result.nextEnemyHeartsHalf <= 0;
+
     if (!willGameEnd) {
       showBanner(result.nextPhase);
     }
   };
 
-  const startResolution = (playerCard: CardDefinition, enemyCard: CardDefinition) => {
+  const startResolution = (currentStateForTurn: GameState, playerCard: CardDefinition, enemyCard: CardDefinition) => {
     const context: GameContext = {
-      currentState: state,
+      currentState: currentStateForTurn,
       playerCard,
       enemyCard,
     };
@@ -213,38 +237,57 @@ export default function Page() {
     if (duelApplyTimerRef.current) clearTimeout(duelApplyTimerRef.current);
 
     duelApplyTimerRef.current = setTimeout(() => {
-      applyResolvedResult(result, playerCard, enemyCard);
+      applyResolvedResult(currentStateForTurn, result, playerCard, enemyCard);
     }, DUEL_ANIMATION_MS);
+  };
+
+  const spendTensionForCard = (baseTension: number, card: CardDefinition) => {
+    return Math.max(0, baseTension - (card.tensionCost ?? 0));
+  };
+
+  const pickEnemyCard = (snapshot: GameState) => {
+    if (snapshot.enemyVulnerable) return FORCED_VULNERABLE_CARD;
+
+    const pool = buildCardPool(
+      snapshot.phase,
+      enemyRole,
+      !snapshot.enemyBurstUsed,
+      snapshot.enemyTension >= 50
+    ).filter((card) => (card.tensionCost ?? 0) <= snapshot.enemyTension);
+
+    return pickWeightedRandomCard({
+      cards: pool,
+      state: snapshot,
+      role: enemyRole,
+      personality: snapshot.enemyPersonality,
+    });
   };
 
   const handleSelectCard = (playerCard: CardDefinition) => {
     if (isGameOver || isDuelPlaying || state.playerVulnerable) return;
+    if ((playerCard.tensionCost ?? 0) > state.playerTension) return;
 
-    const enemyCard = state.enemyVulnerable
-      ? FORCED_VULNERABLE_CARD
-      : pickWeightedRandomCard({
-          cards: buildCardPool(state.phase, enemyRole, !state.enemyBurstUsed),
-          state,
-          role: enemyRole,
-          personality: state.enemyPersonality,
-        });
+    const enemyCardPreview = pickEnemyCard(state);
 
-    startResolution(playerCard, enemyCard);
+    const snapshot: GameState = {
+      ...state,
+      playerTension: spendTensionForCard(state.playerTension, playerCard),
+      enemyTension: spendTensionForCard(state.enemyTension, enemyCardPreview),
+    };
+
+    startResolution(snapshot, playerCard, enemyCardPreview);
   };
 
   const handleAdvanceVulnerableTurn = () => {
     if (isGameOver || isDuelPlaying || !state.playerVulnerable) return;
 
-    const enemyCard = state.enemyVulnerable
-      ? FORCED_VULNERABLE_CARD
-      : pickWeightedRandomCard({
-          cards: buildCardPool(state.phase, enemyRole, !state.enemyBurstUsed),
-          state,
-          role: enemyRole,
-          personality: state.enemyPersonality,
-        });
+    const enemyCard = pickEnemyCard(state);
+    const snapshot: GameState = {
+      ...state,
+      enemyTension: spendTensionForCard(state.enemyTension, enemyCard),
+    };
 
-    startResolution(FORCED_VULNERABLE_CARD, enemyCard);
+    startResolution(snapshot, FORCED_VULNERABLE_CARD, enemyCard);
   };
 
   const handleReset = () => {
@@ -252,22 +295,25 @@ export default function Page() {
     if (duelApplyTimerRef.current) clearTimeout(duelApplyTimerRef.current);
 
     setDuelOverlay(null);
+    setHoveredCard(null);
     setHistory([]);
 
     setState({
-      playerHp: 100,
-      enemyHp: 100,
+      playerHeartsHalf: TOTAL_HEARTS_HALF,
+      enemyHeartsHalf: TOTAL_HEARTS_HALF,
       playerTension: 0,
       enemyTension: 0,
-      playerTile: INITIAL_PLAYER_TILE,
-      enemyTile: INITIAL_ENEMY_TILE,
+      playerX: INITIAL_PLAYER_X,
+      enemyX: INITIAL_ENEMY_X,
+      playerLane: "ground",
+      enemyLane: "ground",
       phase: "opening",
       playerRoleInPhase: "neutral",
       playerStateText: "뉴트럴",
       enemyStateText: "뉴트럴",
-      message: "개막이다. 의도를 고르고, 거리와 국면의 흐름을 먼저 잡아라.",
+      message: "개막이다. 거리와 줄(공중/지상)을 먼저 읽어라.",
       commentary:
-        "1x7 필드 기준으로 거리와 리치를 먼저 계산한다. 잡기와 무적기는 실패하면 무방비 상태가 된다.",
+        "이번 버전은 하트 4개 체력과 2x7 평면 전장 기준으로 진행된다.",
       turn: 1,
       round: 1,
       effectText: "",
@@ -292,7 +338,7 @@ export default function Page() {
 
   const selectionDescription = useMemo(() => {
     if (state.playerVulnerable) {
-      return "잡기/무적기 실패 후 딜레이가 길게 남았다. 이번 턴은 제대로 행동할 수 없다.";
+      return "잡기/무적/각성 필살기 실패 후 딜레이가 길게 남았다.";
     }
     if (state.playerRoleInPhase === "attacker") {
       return "지금은 네가 흐름을 쥐고 있다. 압박의 방향을 고르자.";
@@ -300,12 +346,18 @@ export default function Page() {
     if (state.playerRoleInPhase === "defender") {
       return "지금은 수세다. 버틸지, 탈출할지, 뒤집을지 고르자.";
     }
-    return "세부 행동이 아니라 의도를 선택한다. 이동 후 거리와 리치로 먼저 판정한다.";
+    return "마우스를 올리면 빨간 박스로 공격 판정 범위를 미리 볼 수 있다.";
   }, [state.playerRoleInPhase, state.playerVulnerable]);
 
   return (
     <>
       <style jsx global>{`
+        html,
+        body {
+          height: 100%;
+          overflow: hidden;
+        }
+
         @keyframes phaseSlideCenter {
           0% {
             transform: translateX(-120vw) scale(0.96);
@@ -331,11 +383,11 @@ export default function Page() {
         }
       `}</style>
 
-      <main className="min-h-screen overflow-y-auto bg-black p-3 text-white sm:p-6">
-        <div className="mx-auto w-full max-w-[1700px]">
+      <main className="h-screen overflow-hidden bg-black p-3 text-white sm:p-6">
+        <div className="mx-auto flex h-full w-full max-w-[1700px] flex-col">
           <div className="mb-3 flex items-center justify-between sm:mb-4">
             <div className="text-[10px] font-black tracking-[0.28em] text-zinc-500 sm:text-xs">
-              TRAINING BUILD V2 · {TILE_COUNT} TILE
+              TRAINING BUILD V3 · HEART + 2x7
             </div>
 
             <button
@@ -346,7 +398,7 @@ export default function Page() {
             </button>
           </div>
 
-          <div className="relative w-full overflow-hidden rounded-[20px] border border-zinc-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 shadow-[0_0_60px_rgba(0,0,0,0.65)] sm:rounded-[28px]">
+          <div className="relative flex-1 overflow-hidden rounded-[20px] border border-zinc-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 shadow-[0_0_60px_rgba(0,0,0,0.65)] sm:rounded-[28px]">
             <div className="pointer-events-none absolute inset-0 z-0 opacity-20 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
 
             {banner && <PhaseBanner banner={banner} />}
@@ -359,10 +411,10 @@ export default function Page() {
             )}
 
             {!isGameOver ? (
-              <div className="relative z-10 flex flex-col pb-4 sm:pb-6">
+              <div className="relative z-10 flex h-full flex-col">
                 <BattleHud
-                  playerHp={state.playerHp}
-                  enemyHp={state.enemyHp}
+                  playerHeartsHalf={state.playerHeartsHalf}
+                  enemyHeartsHalf={state.enemyHeartsHalf}
                   playerTension={state.playerTension}
                   enemyTension={state.enemyTension}
                   round={state.round}
@@ -381,51 +433,57 @@ export default function Page() {
                   enemyVulnerable={state.enemyVulnerable}
                 />
 
-                <div className="relative z-20 flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
-                  <BattleField
-                    message={state.message}
-                    phaseTitle={phaseTitle}
-                    playerRoleInPhase={state.playerRoleInPhase}
-                    playerTile={state.playerTile}
-                    enemyTile={state.enemyTile}
-                    effectText={state.effectText}
-                  />
-
-                  <CommentaryBox commentary={state.commentary} />
-
-                  {!state.playerVulnerable ? (
-                    <ActionCardRow
-                      title={selectionTitle}
-                      description={selectionDescription}
-                      cards={currentCards}
-                      onSelect={handleSelectCard}
-                      disabled={isDuelPlaying}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="relative z-20 flex flex-col gap-3 p-3 sm:gap-4 sm:p-4">
+                    <BattleField
+                      message={state.message}
+                      phaseTitle={phaseTitle}
+                      playerRoleInPhase={state.playerRoleInPhase}
+                      playerX={state.playerX}
+                      enemyX={state.enemyX}
+                      playerLane={state.playerLane}
+                      enemyLane={state.enemyLane}
+                      effectText={state.effectText}
+                      previewCard={hoveredCard}
                     />
-                  ) : (
-                    <div className="relative z-30 overflow-hidden border border-zinc-700 bg-zinc-950/80 shadow-lg">
-                      <div className="border-b border-zinc-800 bg-black/30 px-4 py-3 sm:px-5">
-                        <div className="mb-1 text-lg font-black text-red-100">{selectionTitle}</div>
-                        <div className="text-xs text-zinc-400 sm:text-sm">{selectionDescription}</div>
+
+                    <CommentaryBox commentary={state.commentary} />
+
+                    {!state.playerVulnerable ? (
+                      <ActionCardRow
+                        title={selectionTitle}
+                        description={selectionDescription}
+                        cards={currentCards}
+                        onSelect={handleSelectCard}
+                        onHoverCard={setHoveredCard}
+                        disabled={isDuelPlaying}
+                      />
+                    ) : (
+                      <div className="relative z-30 overflow-hidden border border-zinc-700 bg-zinc-950/80 shadow-lg">
+                        <div className="border-b border-zinc-800 bg-black/30 px-4 py-3 sm:px-5">
+                          <div className="mb-1 text-lg font-black text-red-100">{selectionTitle}</div>
+                          <div className="text-xs text-zinc-400 sm:text-sm">{selectionDescription}</div>
+                        </div>
+                        <div className="p-4">
+                          <button
+                            type="button"
+                            onClick={handleAdvanceVulnerableTurn}
+                            disabled={isDuelPlaying}
+                            className="rounded-md border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm font-black text-red-100 hover:border-red-300 disabled:opacity-40"
+                          >
+                            무방비 턴 진행
+                          </button>
+                        </div>
                       </div>
-                      <div className="p-4">
-                        <button
-                          type="button"
-                          onClick={handleAdvanceVulnerableTurn}
-                          disabled={isDuelPlaying}
-                          className="rounded-md border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm font-black text-red-100 hover:border-red-300 disabled:opacity-40"
-                        >
-                          무방비 턴 진행
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="relative z-20">
+              <div className="relative z-20 h-full overflow-y-auto">
                 <ReviewScreen
                   history={history}
-                  didWin={state.enemyHp <= 0}
+                  didWin={state.enemyHeartsHalf <= 0}
                   onRestart={handleReset}
                 />
               </div>

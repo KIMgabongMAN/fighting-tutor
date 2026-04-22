@@ -13,6 +13,7 @@ export type PhaseId =
 export type PlayerRoleInPhase = "neutral" | "attacker" | "defender";
 export type OpponentPersonality = "balanced" | "defensive" | "aggressive";
 export type DuelOutcome = "player" | "enemy" | "none";
+export type Lane = "ground" | "air";
 
 export type CardTag =
   | "수비"
@@ -20,9 +21,6 @@ export type CardTag =
   | "무적"
   | "공중"
   | "지상"
-  | "하단"
-  | "중단"
-  | "이지선다"
   | "캔슬불가"
   | "버스트"
   | "거리조절"
@@ -54,22 +52,27 @@ export type CardDefinition = {
   color: "red" | "orange" | "gold" | "blue" | "gray";
   groupLabel: string;
   baseWeight: number;
-  attackPower: number;
-  grabDamage: number;
   advance: number;
   push: number;
   successOutcome: SuccessOutcome;
   rangeMin: number;
   rangeMax: number;
+  laneTarget: Lane | "both";
+  laneChange?: Lane;
+  tensionCost?: number;
+  damageOnHitHalf?: number;
+  comboBonusHalf?: number;
 };
 
 export type GameState = {
-  playerHp: number;
-  enemyHp: number;
+  playerHeartsHalf: number;
+  enemyHeartsHalf: number;
   playerTension: number;
   enemyTension: number;
-  playerTile: number;
-  enemyTile: number;
+  playerX: number;
+  enemyX: number;
+  playerLane: Lane;
+  enemyLane: Lane;
   phase: PhaseId;
   playerRoleInPhase: PlayerRoleInPhase;
   playerStateText: string;
@@ -94,10 +97,10 @@ export type TurnRecord = {
   playerCardTitle: string;
   enemyCardTitle: string;
   outcome: DuelOutcome;
-  playerHpBefore: number;
-  playerHpAfter: number;
-  enemyHpBefore: number;
-  enemyHpAfter: number;
+  playerLifeBefore: number;
+  playerLifeAfter: number;
+  enemyLifeBefore: number;
+  enemyLifeAfter: number;
   distanceBefore: string;
   distanceAfter: string;
   note: string;
@@ -122,12 +125,14 @@ export type GameContext = {
 };
 
 export type ResolutionResult = {
-  nextPlayerHp: number;
-  nextEnemyHp: number;
+  nextPlayerHeartsHalf: number;
+  nextEnemyHeartsHalf: number;
   nextPlayerTension: number;
   nextEnemyTension: number;
-  nextPlayerTile: number;
-  nextEnemyTile: number;
+  nextPlayerX: number;
+  nextEnemyX: number;
+  nextPlayerLane: Lane;
+  nextEnemyLane: Lane;
   nextPhase: PhaseId;
   nextPlayerRoleInPhase: PlayerRoleInPhase;
   nextPlayerStateText: string;
