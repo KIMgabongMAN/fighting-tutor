@@ -21,9 +21,16 @@ function rangeText(card: CardDefinition) {
   return `${card.rangeMin}~${card.rangeMax}`;
 }
 
-function laneText(card: CardDefinition) {
-  if (card.laneTarget === "both") return "지상/공중";
-  return card.laneTarget === "ground" ? "지상" : "공중";
+function rowsText(card: CardDefinition) {
+  if (card.targetRows.length === 0) return "없음";
+  return card.targetRows.join(",");
+}
+
+function poseText(card: CardDefinition) {
+  if (!card.nextPose) return "-";
+  if (card.nextPose === "stand") return "서기";
+  if (card.nextPose === "crouch") return "숙이기";
+  return "공중";
 }
 
 export function ActionCard({
@@ -52,6 +59,7 @@ export function ActionCard({
             {card.groupLabel}
           </div>
         </div>
+
         {card.tensionCost ? (
           <div className="rounded-sm border border-yellow-500/40 bg-yellow-950/40 px-2 py-1 text-[11px] font-black text-yellow-200">
             T {card.tensionCost}
@@ -89,7 +97,10 @@ export function ActionCard({
           공격 범위: {rangeText(card)}
         </div>
         <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1">
-          타깃 줄: {laneText(card)}
+          타격 줄: {rowsText(card)}
+        </div>
+        <div className="rounded-sm border border-white/10 bg-black/20 px-2 py-1 col-span-2">
+          선택 후 자세: {poseText(card)}
         </div>
       </div>
     </button>

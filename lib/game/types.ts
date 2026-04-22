@@ -13,7 +13,9 @@ export type PhaseId =
 export type PlayerRoleInPhase = "neutral" | "attacker" | "defender";
 export type OpponentPersonality = "balanced" | "defensive" | "aggressive";
 export type DuelOutcome = "player" | "enemy" | "none";
-export type Lane = "ground" | "air";
+
+export type BattlefieldRow = "H" | "A" | "M" | "G";
+export type CharacterPose = "stand" | "crouch" | "air";
 
 export type CardTag =
   | "수비"
@@ -21,6 +23,8 @@ export type CardTag =
   | "무적"
   | "공중"
   | "지상"
+  | "하단"
+  | "중단"
   | "캔슬불가"
   | "버스트"
   | "거리조절"
@@ -32,7 +36,8 @@ export type CardTag =
   | "중거리 공격"
   | "원거리 공격"
   | "콤보"
-  | "다운";
+  | "다운"
+  | "대공";
 
 export type SuccessOutcome =
   | "pressure"
@@ -57,10 +62,10 @@ export type CardDefinition = {
   successOutcome: SuccessOutcome;
   rangeMin: number;
   rangeMax: number;
-  laneTarget: Lane | "both";
-  laneChange?: Lane;
+  targetRows: BattlefieldRow[];
+  nextPose?: CharacterPose;
   tensionCost?: number;
-  damageOnHitHalf?: number;
+  damageHalf?: number;
   comboBonusHalf?: number;
 };
 
@@ -71,8 +76,8 @@ export type GameState = {
   enemyTension: number;
   playerX: number;
   enemyX: number;
-  playerLane: Lane;
-  enemyLane: Lane;
+  playerPose: CharacterPose;
+  enemyPose: CharacterPose;
   phase: PhaseId;
   playerRoleInPhase: PlayerRoleInPhase;
   playerStateText: string;
@@ -131,8 +136,8 @@ export type ResolutionResult = {
   nextEnemyTension: number;
   nextPlayerX: number;
   nextEnemyX: number;
-  nextPlayerLane: Lane;
-  nextEnemyLane: Lane;
+  nextPlayerPose: CharacterPose;
+  nextEnemyPose: CharacterPose;
   nextPhase: PhaseId;
   nextPlayerRoleInPhase: PlayerRoleInPhase;
   nextPlayerStateText: string;

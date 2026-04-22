@@ -35,17 +35,17 @@ function situationalBonus(args: WeightedPickArgs, card: CardDefinition) {
 
   const gap = Math.max(0, state.enemyX - state.playerX - 1);
 
-  if (gap >= 4) {
+  if (gap >= 5) {
     if (card.tags.includes("원거리 공격")) bonus += 3;
     if (card.tags.includes("대쉬")) bonus += 4;
   }
 
-  if (gap === 0) {
+  if (gap <= 1) {
     if (card.tags.includes("잡기")) bonus += 3;
     if (card.tags.includes("근거리 공격")) bonus += 2;
   }
 
-  if (state.enemyLane === "air" && card.laneTarget === "air") {
+  if (state.playerPose === "air" && card.tags.includes("대공")) {
     bonus += 4;
   }
 
@@ -72,6 +72,7 @@ function computeWeight(args: WeightedPickArgs, card: CardDefinition) {
     card.baseWeight +
     personalityBonus(card, args.personality) +
     situationalBonus(args, card);
+
   return Math.max(1, raw);
 }
 
