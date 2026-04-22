@@ -32,13 +32,7 @@ function fighterStateClass(state: string) {
   }
 }
 
-function HeartIcon({
-  fillPercent,
-  size = 32,
-}: {
-  fillPercent: number;
-  size?: number;
-}) {
+function HeartIcon({ fillPercent, size = 32 }: { fillPercent: number; size?: number }) {
   const heartPath =
     "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z";
 
@@ -47,7 +41,6 @@ function HeartIcon({
       <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full" aria-hidden="true">
         <path d={heartPath} fill="#27272a" stroke="#52525b" strokeWidth="1.2" />
       </svg>
-
       <div className="absolute inset-0 overflow-hidden" style={{ width: `${fillPercent}%` }}>
         <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
           <path d={heartPath} fill="#ef4444" stroke="#fb7185" strokeWidth="1.2" />
@@ -63,7 +56,7 @@ function HeartMeter({ halfUnits }: { halfUnits: number }) {
       {Array.from({ length: 4 }, (_, index) => {
         const remaining = Math.max(0, halfUnits - index * 2);
         const fillPercent = remaining >= 2 ? 100 : remaining === 1 ? 50 : 0;
-        return <HeartIcon key={index} fillPercent={fillPercent} size={32} />;
+        return <HeartIcon key={index} fillPercent={fillPercent} />;
       })}
     </div>
   );
@@ -95,11 +88,7 @@ export function BattleHud({
             </div>
             <div className="text-sm text-zinc-300">격투 입문자</div>
           </div>
-
-          <div className="mb-3">
-            <HeartMeter halfUnits={playerHeartsHalf} />
-          </div>
-
+          <div className="mb-3"><HeartMeter halfUnits={playerHeartsHalf} /></div>
           <div className="flex items-center gap-3">
             <div className="w-10 text-xs text-zinc-400">텐션</div>
             <div className="h-3 flex-1 overflow-hidden rounded-sm border border-zinc-700 bg-zinc-900">
@@ -129,11 +118,7 @@ export function BattleHud({
               ENEMY
             </div>
           </div>
-
-          <div className="mb-3 flex justify-end">
-            <HeartMeter halfUnits={enemyHeartsHalf} />
-          </div>
-
+          <div className="mb-3 flex justify-end"><HeartMeter halfUnits={enemyHeartsHalf} /></div>
           <div className="flex items-center gap-3">
             <div className="w-10 text-sm font-bold text-zinc-100">{enemyTension}</div>
             <div className="h-3 flex-1 overflow-hidden rounded-sm border border-zinc-700 bg-zinc-900">
@@ -150,16 +135,8 @@ export function BattleHud({
       <div className="grid grid-cols-6 gap-2 px-4 pb-4 sm:px-6">
         <InfoBox label="거리 판정" value={distanceLabel} />
         <InfoBox label="현재 국면" value={phaseTitle} />
-        <InfoBox
-          label="내 상태"
-          value={playerVulnerable ? "무방비" : playerStateText}
-          className={fighterStateClass(playerVulnerable ? "무방비" : playerStateText)}
-        />
-        <InfoBox
-          label="상대 상태"
-          value={enemyVulnerable ? "무방비" : enemyStateText}
-          className={fighterStateClass(enemyVulnerable ? "무방비" : enemyStateText)}
-        />
+        <InfoBox label="내 상태" value={playerVulnerable ? "무방비" : playerStateText} className={fighterStateClass(playerVulnerable ? "무방비" : playerStateText)} />
+        <InfoBox label="상대 상태" value={enemyVulnerable ? "무방비" : enemyStateText} className={fighterStateClass(enemyVulnerable ? "무방비" : enemyStateText)} />
         <InfoBox label="내 버스트" value={playerBurstUsed ? "사용 완료" : "사용 가능"} />
         <InfoBox label="상대 버스트" value={enemyBurstUsed ? "사용 완료" : "사용 가능"} />
       </div>

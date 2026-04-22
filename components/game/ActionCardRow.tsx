@@ -12,17 +12,11 @@ type Props = {
 
 export function ActionCardRow({ title, description, cards, onSelect, onHoverCard, disabled = false }: Props) {
   return (
-    <section className="overflow-hidden rounded-[22px] border border-zinc-700 bg-black/80 shadow-2xl">
-      <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-        <div>
-          <div className="text-[28px] font-black text-yellow-100">{title}</div>
-          <div className="text-sm text-zinc-400">{description}</div>
-        </div>
-        <div className="rounded-lg border border-zinc-600 bg-zinc-900/80 px-4 py-2 text-sm font-bold text-zinc-200">
-          표시 정보
-        </div>
+    <section className="relative z-30 overflow-visible border border-zinc-700 bg-zinc-950/80 shadow-lg">
+      <div className="border-b border-zinc-800 bg-black/30 px-4 py-3 sm:px-5">
+        <div className="mb-1 text-lg font-black text-yellow-100">{title}</div>
+        <div className="text-xs text-zinc-400 sm:text-sm">{description}</div>
       </div>
-
       <div className="overflow-x-auto p-4">
         <div className="flex min-w-max gap-4 pb-1">
           {cards.map((card) => (
