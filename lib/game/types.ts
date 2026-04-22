@@ -6,7 +6,6 @@ export type PhaseId =
   | "midNeutral"
   | "farNeutral"
   | "pressure"
-  | "guard"
   | "hardDown"
   | "combo";
 

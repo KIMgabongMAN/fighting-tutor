@@ -1,8 +1,4 @@
-import type {
-  CardDefinition,
-  OpponentPersonality,
-  WeightedPickArgs,
-} from "@/lib/game/types";
+import type { CardDefinition, OpponentPersonality, WeightedPickArgs } from "@/lib/game/types";
 
 function hasAttackLike(card: CardDefinition) {
   return card.tags.some((tag) => tag.includes("공격"));
@@ -32,7 +28,6 @@ function personalityBonus(card: CardDefinition, personality: OpponentPersonality
 function situationalBonus(args: WeightedPickArgs, card: CardDefinition) {
   const { state, role } = args;
   let bonus = 0;
-
   const gap = Math.max(0, state.enemyX - state.playerX - 1);
 
   if (gap >= 5) {
@@ -54,11 +49,6 @@ function situationalBonus(args: WeightedPickArgs, card: CardDefinition) {
     if (card.tags.includes("무적")) bonus += 1;
   }
 
-  if (state.phase === "pressure" && role === "attacker") {
-    if (card.id.includes("frame")) bonus += 3;
-    if (card.tags.includes("잡기")) bonus += 2;
-  }
-
   if (card.tags.includes("버스트")) {
     if (state.phase === "combo") bonus += 8;
     else bonus -= 2;
@@ -68,20 +58,11 @@ function situationalBonus(args: WeightedPickArgs, card: CardDefinition) {
 }
 
 function computeWeight(args: WeightedPickArgs, card: CardDefinition) {
-  const raw =
-    card.baseWeight +
-    personalityBonus(card, args.personality) +
-    situationalBonus(args, card);
-
-  return Math.max(1, raw);
+  return Math.max(1, card.baseWeight + personalityBonus(card, args.personality) + situationalBonus(args, card));
 }
 
 export function pickWeightedRandomCard(args: WeightedPickArgs) {
-  const weighted = args.cards.map((card) => ({
-    card,
-    weight: computeWeight(args, card),
-  }));
-
+  const weighted = args.cards.map((card) => ({ card, weight: computeWeight(args, card) }));
   const total = weighted.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
 

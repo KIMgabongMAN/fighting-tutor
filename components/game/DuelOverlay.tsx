@@ -13,154 +13,34 @@ function outcomeText(outcome: DuelOutcome) {
 }
 
 export function DuelOverlay({ playerCard, enemyCard, outcome }: Props) {
-  const leftClass =
-    outcome === "player"
-      ? "duel-card-left-win"
-      : outcome === "enemy"
-      ? "duel-card-left-lose"
-      : "duel-card-left-pass";
-
-  const rightClass =
-    outcome === "enemy"
-      ? "duel-card-right-win"
-      : outcome === "player"
-      ? "duel-card-right-lose"
-      : "duel-card-right-pass";
-
   return (
-    <>
-      <style jsx>{`
-        @keyframes dimIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes cardLeftWin {
-          0% { opacity: 0; transform: translate(-44vw, 0) scale(0.92) rotate(-10deg); }
-          30% { opacity: 1; transform: translate(-10vw, 0) scale(1) rotate(-4deg); }
-          70% { transform: translate(-50%, 0) scale(1.3) rotate(0deg); }
-          100% { opacity: 1; transform: translate(-50%, 0) scale(1.3) rotate(0deg); }
-        }
-
-        @keyframes cardLeftLose {
-          0% { opacity: 0; transform: translate(-44vw, 0) scale(0.92) rotate(-10deg); }
-          30% { opacity: 1; transform: translate(-10vw, 0) scale(1) rotate(-4deg); }
-          100% { opacity: 0; transform: translate(-60vw, 0) scale(0.82) rotate(-10deg); }
-        }
-
-        @keyframes cardLeftPass {
-          0% { opacity: 0; transform: translate(-44vw, 0) scale(0.92) rotate(-10deg); }
-          30% { opacity: 1; transform: translate(-10vw, 0) scale(1) rotate(-4deg); }
-          100% { opacity: 0; transform: translate(-24vw, 0) scale(0.9) rotate(-6deg); }
-        }
-
-        @keyframes cardRightWin {
-          0% { opacity: 0; transform: translate(44vw, 0) scale(0.92) rotate(10deg); }
-          30% { opacity: 1; transform: translate(10vw, 0) scale(1) rotate(4deg); }
-          70% { transform: translate(-50%, 0) scale(1.3) rotate(0deg); }
-          100% { opacity: 1; transform: translate(-50%, 0) scale(1.3) rotate(0deg); }
-        }
-
-        @keyframes cardRightLose {
-          0% { opacity: 0; transform: translate(44vw, 0) scale(0.92) rotate(10deg); }
-          30% { opacity: 1; transform: translate(10vw, 0) scale(1) rotate(4deg); }
-          100% { opacity: 0; transform: translate(60vw, 0) scale(0.82) rotate(10deg); }
-        }
-
-        @keyframes cardRightPass {
-          0% { opacity: 0; transform: translate(44vw, 0) scale(0.92) rotate(10deg); }
-          30% { opacity: 1; transform: translate(10vw, 0) scale(1) rotate(4deg); }
-          100% { opacity: 0; transform: translate(24vw, 0) scale(0.9) rotate(6deg); }
-        }
-
-        @keyframes captionShow {
-          0%, 72% { opacity: 0; transform: translateX(-120vw) scale(0.96); }
-          84% { opacity: 1; transform: translateX(0) scale(1); }
-          100% { opacity: 0; transform: translateX(120vw) scale(0.98); }
-        }
-
-        .dim { animation: dimIn 0.25s ease forwards; }
-        .duel-card-left-win { animation: cardLeftWin 4.8s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-left-lose { animation: cardLeftLose 4.8s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-left-pass { animation: cardLeftPass 4.8s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-right-win { animation: cardRightWin 4.8s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-right-lose { animation: cardRightLose 4.8s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .duel-card-right-pass { animation: cardRightPass 4.8s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-        .caption { animation: captionShow 4.8s cubic-bezier(0.22, 0.9, 0.22, 1) forwards; }
-      `}</style>
-
-      <div className="pointer-events-none absolute inset-0 z-[80] overflow-hidden">
-        <div className="dim absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
-
-        <div className="absolute left-1/2 top-1/2 z-10 h-0 w-0">
-          <div className={`absolute top-1/2 ${leftClass}`}>
-            <OverlayCard card={playerCard} side="player" />
-          </div>
-
-          <div className={`absolute top-1/2 ${rightClass}`}>
-            <OverlayCard card={enemyCard} side="enemy" />
-          </div>
-        </div>
-
-        <div className="absolute inset-x-0 top-[14%] flex justify-center">
-          <div
-            className={`caption border px-8 py-3 text-center text-2xl font-black tracking-[0.18em] border-white/30 bg-black/70 ${
-              outcome === "player"
-                ? "text-yellow-200"
-                : outcome === "enemy"
-                ? "text-red-300"
-                : "text-zinc-100"
-            } sm:text-4xl`}
-          >
-            {outcomeText(outcome)}
-          </div>
-        </div>
+    <div className="pointer-events-none absolute inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+      <div className="absolute top-[14%] rounded-xl border border-white/20 bg-black/70 px-8 py-3 text-4xl font-black text-white shadow-2xl">
+        {outcomeText(outcome)}
       </div>
-    </>
+      <div className="grid w-full max-w-6xl grid-cols-2 gap-8 px-10">
+        <OverlayCard card={playerCard} highlight={outcome === "player"} color="red" />
+        <OverlayCard card={enemyCard} highlight={outcome === "enemy"} color="yellow" />
+      </div>
+    </div>
   );
 }
 
-function OverlayCard({
-  card,
-  side,
-}: {
-  card: CardDefinition;
-  side: "player" | "enemy";
-}) {
-  const borderTone =
-    side === "player"
-      ? "border-yellow-400/60 bg-zinc-950/95"
-      : "border-red-400/60 bg-zinc-950/95";
-
+function OverlayCard({ card, highlight, color }: { card: CardDefinition; highlight: boolean; color: "red" | "yellow" }) {
+  const tone = color === "red" ? "border-red-500/50" : "border-yellow-500/50";
   return (
-    <div
-      className={`w-[230px] -translate-x-1/2 -translate-y-1/2 border p-4 shadow-[0_0_40px_rgba(0,0,0,0.45)] sm:w-[290px] sm:p-5 ${borderTone}`}
-    >
+    <div className={`rounded-2xl border bg-zinc-950/95 p-5 shadow-[0_0_30px_rgba(0,0,0,0.45)] ${tone} ${highlight ? "scale-105" : "opacity-75"}`}>
       <div className="mb-3 flex items-center justify-between">
-        <div className="border border-white/10 bg-black/30 px-3 py-1 text-base font-black text-white sm:text-lg">
-          {card.order}
-        </div>
-        <div className="text-xs font-black tracking-[0.18em] text-zinc-400">
-          {card.groupLabel}
-        </div>
+        <div className="rounded-md border border-white/10 bg-black/30 px-3 py-1 text-2xl font-black">{card.order}</div>
+        <div className="text-xs font-black tracking-[0.18em] text-zinc-400">{card.groupLabel}</div>
       </div>
-
-      <div className="mb-3 text-xl font-black leading-tight text-white sm:text-2xl">
-        {card.title}
-      </div>
-
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {card.tags.slice(0, 4).map((tag) => (
-          <span
-            key={`${card.id}-${tag}`}
-            className="border border-white/10 bg-black/30 px-2 py-1 text-[10px] font-bold text-zinc-200 sm:text-[11px]"
-          >
-            {tag}
-          </span>
+      <div className="mb-3 text-3xl font-black text-white">{card.title}</div>
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {card.tags.map((tag) => (
+          <span key={`${card.id}-${tag}`} className="rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[11px] font-bold text-zinc-200">{tag}</span>
         ))}
       </div>
-
-      <div className="text-xs leading-5 text-zinc-300 sm:text-sm">{card.description}</div>
+      <div className="text-sm leading-6 text-zinc-300">{card.description}</div>
     </div>
   );
 }
