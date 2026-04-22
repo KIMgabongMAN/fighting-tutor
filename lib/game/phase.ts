@@ -1,8 +1,9 @@
 import type {
+  BattlefieldRow,
   CardDefinition,
+  CharacterPose,
   DuelOutcome,
   GameContext,
-  Lane,
   PhaseId,
   PlayerRoleInPhase,
   ResolutionResult,
@@ -26,7 +27,7 @@ function winnerToDuelOutcome(winner: Winner): DuelOutcome {
 }
 
 export function clampX(value: number) {
-  return Math.max(0, Math.min(6, value));
+  return Math.max(0, Math.min(8, value));
 }
 
 export function deriveGap(playerX: number, enemyX: number) {
@@ -35,15 +36,15 @@ export function deriveGap(playerX: number, enemyX: number) {
 
 export function deriveDistanceLabel(playerX: number, enemyX: number) {
   const gap = deriveGap(playerX, enemyX);
-  if (gap === 0) return "근거리";
-  if (gap >= 4) return "원거리";
+  if (gap <= 1) return "근거리";
+  if (gap >= 5) return "원거리";
   return "중거리";
 }
 
 export function deriveNeutralPhaseFromX(playerX: number, enemyX: number): PhaseId {
   const gap = deriveGap(playerX, enemyX);
-  if (gap === 0) return "closeNeutral";
-  if (gap >= 4) return "farNeutral";
+  if (gap <= 1) return "closeNeutral";
+  if (gap >= 5) return "farNeutral";
   return "midNeutral";
 }
 
@@ -83,21 +84,28 @@ function isWakeupDefenderCard(card: CardDefinition) {
   return card.phase === "hardDown" && card.role === "defender";
 }
 
-function laneAfterCard(card: CardDefinition, currentLane: Lane) {
-  return card.laneChange ?? currentLane;
+function poseAfterCard(card: CardDefinition, currentPose: CharacterPose) {
+  return card.nextPose ?? currentPose;
 }
 
-function canTargetLane(card: CardDefinition, targetLane: Lane) {
-  return card.laneTarget === "both" || card.laneTarget === targetLane;
+function getOccupancyRows(pose: CharacterPose): BattlefieldRow[] {
+  if (pose === "stand") return ["M", "G"];
+  if (pose === "crouch") return ["G"];
+  return ["H", "A"];
 }
 
-function canConnect(card: CardDefinition, distance: number, targetLane: Lane) {
+function overlaps(a: BattlefieldRow[], b: BattlefieldRow[]) {
+  return a.some((row) => b.includes(row));
+}
+
+function canConnect(
+  card: CardDefinition,
+  distance: number,
+  targetPose: CharacterPose
+) {
   if (card.rangeMax < 0) return false;
-  return (
-    distance >= card.rangeMin &&
-    distance <= card.rangeMax &&
-    canTargetLane(card, targetLane)
-  );
+  if (distance < card.rangeMin || distance > card.rangeMax) return false;
+  return overlaps(card.targetRows, getOccupancyRows(targetPose));
 }
 
 function applyAdvance(
@@ -111,7 +119,7 @@ function applyAdvance(
 
   if (nextPlayerX >= nextEnemyX) {
     nextPlayerX = Math.max(0, nextEnemyX - 1);
-    nextEnemyX = Math.min(6, nextPlayerX + 1);
+    nextEnemyX = Math.min(8, nextPlayerX + 1);
   }
 
   return { nextPlayerX, nextEnemyX };
@@ -138,7 +146,7 @@ function pushOpponent(
 
   if (nextPlayerX >= nextEnemyX) {
     nextPlayerX = Math.max(0, nextEnemyX - 1);
-    nextEnemyX = Math.min(6, nextPlayerX + 1);
+    nextEnemyX = Math.min(8, nextPlayerX + 1);
   }
 
   return { nextPlayerX, nextEnemyX };
@@ -180,8 +188,8 @@ function buildResult(
   nextEnemyHeartsHalf: number,
   nextPlayerX: number,
   nextEnemyX: number,
-  nextPlayerLane: Lane,
-  nextEnemyLane: Lane,
+  nextPlayerPose: CharacterPose,
+  nextEnemyPose: CharacterPose,
   message: string,
   commentary: string,
   effectText: string,
@@ -205,8 +213,8 @@ function buildResult(
     nextEnemyTension: Math.min(100, currentState.enemyTension + getEnemyTensionGain(winner)),
     nextPlayerX,
     nextEnemyX,
-    nextPlayerLane,
-    nextEnemyLane,
+    nextPlayerPose,
+    nextEnemyPose,
     nextPhase,
     nextPlayerRoleInPhase: nextRole,
     nextPlayerStateText: nextPlayerVulnerable ? "무방비" : stateText.player,
@@ -220,28 +228,42 @@ function buildResult(
   };
 }
 
+function getAttackPriority(
+  card: CardDefinition,
+  distance: number,
+  targetPose: CharacterPose
+) {
+  let score = 0;
+
+  if (distance <= 1 && card.tags.includes("근거리 공격")) score += 4;
+  if (distance >= 2 && distance <= 4 && card.tags.includes("중거리 공격")) score += 4;
+  if (distance >= 5 && card.tags.includes("원거리 공격")) score += 4;
+  if (targetPose === "air" && card.tags.includes("대공")) score += 5;
+  if (card.tags.includes("하단")) score += 1;
+  if (card.tags.includes("중단")) score += 1;
+  score += card.damageHalf ?? 1;
+
+  return score;
+}
+
 function compareAttackRanges(
   playerCard: CardDefinition,
   enemyCard: CardDefinition,
   distance: number,
   playerCanHit: boolean,
-  enemyCanHit: boolean
+  enemyCanHit: boolean,
+  playerTargetPose: CharacterPose,
+  enemyTargetPose: CharacterPose
 ): Winner {
   if (playerCanHit && !enemyCanHit) return "player";
   if (!playerCanHit && enemyCanHit) return "enemy";
   if (!playerCanHit && !enemyCanHit) return "none";
 
-  const pClose = playerCard.tags.includes("근거리 공격");
-  const eClose = enemyCard.tags.includes("근거리 공격");
-  const pMid = playerCard.tags.includes("중거리 공격");
-  const eMid = enemyCard.tags.includes("중거리 공격");
-  const pFar = playerCard.tags.includes("원거리 공격");
-  const eFar = enemyCard.tags.includes("원거리 공격");
+  const playerScore = getAttackPriority(playerCard, distance, enemyTargetPose);
+  const enemyScore = getAttackPriority(enemyCard, distance, playerTargetPose);
 
-  if (distance === 0 && pClose !== eClose) return pClose ? "player" : "enemy";
-  if (distance >= 1 && distance <= 3 && pMid !== eMid) return pMid ? "player" : "enemy";
-  if (distance >= 4 && pFar !== eFar) return pFar ? "player" : "enemy";
-
+  if (playerScore > enemyScore) return "player";
+  if (enemyScore > playerScore) return "enemy";
   return "none";
 }
 
@@ -253,7 +275,7 @@ function getDamageHalf(
   if (isPunish) return 2;
   if (winningCard.id === "universal_awakening_super") return 2;
   if (currentPhase === "combo") return winningCard.comboBonusHalf ?? 2;
-  return winningCard.damageOnHitHalf ?? 1;
+  return winningCard.damageHalf ?? 1;
 }
 
 export function resolvePhaseTurn(context: GameContext): ResolutionResult {
@@ -271,17 +293,18 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
 
   let nextPlayerX = moved.nextPlayerX;
   let nextEnemyX = moved.nextEnemyX;
-  let nextPlayerLane = laneAfterCard(playerCard, currentState.playerLane);
-  let nextEnemyLane = laneAfterCard(enemyCard, currentState.enemyLane);
+  let nextPlayerPose = poseAfterCard(playerCard, currentState.playerPose);
+  let nextEnemyPose = poseAfterCard(enemyCard, currentState.enemyPose);
 
   const distance = deriveGap(nextPlayerX, nextEnemyX);
-  const playerCanHit = canConnect(playerCard, distance, nextEnemyLane);
-  const enemyCanHit = canConnect(enemyCard, distance, nextPlayerLane);
+
+  const playerCanHit = canConnect(playerCard, distance, nextEnemyPose);
+  const enemyCanHit = canConnect(enemyCard, distance, nextPlayerPose);
 
   let winner: Winner = "none";
   let winningCard: CardDefinition | null = null;
   let message = "서로 의도를 부딪혔다.";
-  let commentary = "이동과 2x7 판정줄 적용 뒤 승패를 확인했다.";
+  let commentary = "4x9 전장에서 거리와 높이 판정을 먼저 확인했다.";
   let effectText = "";
 
   let nextPlayerVulnerable =
@@ -303,12 +326,12 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     winningCard = enemyCard;
     effectText = "확정 반격";
     message = "네 후딜에 상대가 정확히 처벌을 넣었다.";
-    commentary = "무방비 상태는 다음 턴 반격당하기 매우 쉽다.";
+    commentary = "무방비 상태는 다음 턴 큰 리턴을 허용한다.";
   } else if (currentState.enemyVulnerable && isForcedVulnerable(enemyCard) && playerCanHit) {
     winner = "player";
     winningCard = playerCard;
     effectText = "확정 반격";
-    message = "상대의 후딜을 네가 확실히 처벌했다.";
+    message = "상대 후딜을 네가 확실하게 처벌했다.";
     commentary = "무방비 상대를 때리면 큰 리턴이 난다.";
   } else if (sameTagSet) {
     return buildResult(
@@ -319,10 +342,10 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
       nextEnemyHeartsHalf,
       nextPlayerX,
       nextEnemyX,
-      nextPlayerLane,
-      nextEnemyLane,
+      nextPlayerPose,
+      nextEnemyPose,
       "서로 같은 성질의 선택이 맞물려 상쇄됐다.",
-      "같은 성질의 선택은 크게 진전 없이 리셋된다.",
+      "완전히 같은 성질의 선택은 큰 진전 없이 리셋된다.",
       "상쇄",
       false,
       false
@@ -341,10 +364,10 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
       nextEnemyHeartsHalf,
       pushed.nextPlayerX,
       pushed.nextEnemyX,
-      "ground",
-      "ground",
+      "stand",
+      "stand",
       "버스트로 현재 장면을 강제로 끊었다.",
-      "버스트는 데미지와 후상황을 무효화하고 중립으로 되돌린다.",
+      "버스트는 데미지와 후상황을 무효화하고 다시 중립으로 돌린다.",
       "버스트",
       false,
       false
@@ -360,7 +383,7 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     winningCard = playerCard;
     effectText = "리버설";
     message = "네 무적기가 상대 공격을 뚫고 적중했다.";
-    commentary = "무적기는 유효 거리와 유효 줄에서만 강하다.";
+    commentary = "무적기는 닿는 거리와 높이에서만 강하다.";
   } else if (
     isInvincible(enemyCard) &&
     !isInvincible(playerCard) &&
@@ -372,7 +395,7 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     winningCard = enemyCard;
     effectText = "리버설";
     message = "상대 무적기가 네 공격을 뚫고 적중했다.";
-    commentary = "무적기는 닿는 구간에서만 상성을 뒤집는다.";
+    commentary = "무적기는 닿는 구간에서 상성을 뒤집는다.";
   } else if (
     isMeaty(playerCard) &&
     isWakeupDefenderCard(enemyCard) &&
@@ -384,7 +407,7 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     winningCard = playerCard;
     effectText = "기상 카운터";
     message = "기상에 깔아두기가 상대 기상 행동을 커트했다.";
-    commentary = "딜레이 없는 기상 압박은 가드/무적 외 행동을 잘라낸다.";
+    commentary = "딜레이 없는 기상 압박은 가드/무적 외 행동을 자른다.";
   } else if (
     isMeaty(enemyCard) &&
     isWakeupDefenderCard(playerCard) &&
@@ -401,40 +424,40 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     playerCard.tags.includes("선공") &&
     distance === 0 &&
     playerCanHit &&
+    nextEnemyPose !== "air" &&
     !isInvincible(enemyCard) &&
-    nextEnemyLane === "ground" &&
     (hasAttackLike(enemyCard) || hasDefenseTag(enemyCard))
   ) {
     winner = "player";
     winningCard = playerCard;
     effectText = "선공 잡기";
-    message = "영거리 잡기가 공격/수비보다 먼저 성립했다.";
-    commentary = "선공 잡기는 붙은 거리에서 강력하다.";
+    message = "영거리 잡기가 먼저 성립했다.";
+    commentary = "붙은 거리에서 선공 잡기는 강력하다.";
   } else if (
     enemyCard.tags.includes("선공") &&
     distance === 0 &&
     enemyCanHit &&
+    nextPlayerPose !== "air" &&
     !isInvincible(playerCard) &&
-    nextPlayerLane === "ground" &&
     (hasAttackLike(playerCard) || hasDefenseTag(playerCard))
   ) {
     winner = "enemy";
     winningCard = enemyCard;
     effectText = "선공 잡기";
     message = "상대 영거리 잡기가 먼저 성립했다.";
-    commentary = "붙은 거리의 잡기는 단순 가드에 강하다.";
-  } else if (isGrab(playerCard) && nextEnemyLane === "air" && playerCanHit) {
+    commentary = "붙은 거리의 잡기는 단순 수비보다 앞선다.";
+  } else if (isGrab(playerCard) && nextEnemyPose === "air" && playerCanHit) {
     winner = "enemy";
     winningCard = enemyCard;
     effectText = "잡기 회피";
     message = "상대가 공중으로 빠져 잡기를 피했다.";
-    commentary = "지상 잡기는 공중 줄에 있는 상대를 잡지 못한다.";
-  } else if (isGrab(enemyCard) && nextPlayerLane === "air" && enemyCanHit) {
+    commentary = "지상 잡기는 공중 판정에 성립하지 않는다.";
+  } else if (isGrab(enemyCard) && nextPlayerPose === "air" && enemyCanHit) {
     winner = "player";
     winningCard = playerCard;
     effectText = "잡기 회피";
     message = "네가 공중으로 빠져 상대 잡기를 피했다.";
-    commentary = "2x7 구조에서는 줄이 다르면 잡기가 성립하지 않는다.";
+    commentary = "4x9 전장에서는 높이 차이로 잡기 불성립이 명확하다.";
   } else if (isFrameTrap(playerCard) && enemyCard.tags.includes("딜레이") && playerCanHit) {
     winner = "player";
     winningCard = playerCard;
@@ -457,8 +480,8 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
       nextEnemyHeartsHalf,
       pushed.nextPlayerX,
       pushed.nextEnemyX,
-      nextPlayerLane,
-      nextEnemyLane,
+      nextPlayerPose,
+      nextEnemyPose,
       "프레임 트랩이 히트는 아니었지만 압박을 정리했다.",
       "상대가 개기지 않았다면 콤보가 아니라 압박 종료에 가깝다.",
       "압박 종료",
@@ -475,10 +498,10 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
       nextEnemyHeartsHalf,
       pushed.nextPlayerX,
       pushed.nextEnemyX,
-      nextPlayerLane,
-      nextEnemyLane,
+      nextPlayerPose,
+      nextEnemyPose,
       "상대 프레임 트랩이 히트는 아니었지만 압박을 정리했다.",
-      "상대가 개기지 않았다면 프레임 트랩은 단순 압박 정리로 끝난다.",
+      "프레임 트랩이 항상 히트로 이어지진 않는다.",
       "압박 종료",
       false,
       false
@@ -494,7 +517,7 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     winningCard = enemyCard;
     effectText = "가드 성공";
     message = "상대가 침착하게 네 공격을 받아냈다.";
-    commentary = "가드 성공 후 거리가 다시 정리된다.";
+    commentary = "가드 성공 뒤엔 다시 거리 싸움이 시작된다.";
   } else if (isGrab(playerCard) && hasDefenseTag(enemyCard) && distance === 0 && playerCanHit) {
     winner = "player";
     winningCard = playerCard;
@@ -508,17 +531,26 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     message = "상대 잡기가 네 수비를 깨뜨렸다.";
     commentary = "가드만 고수하면 잡기에 노출된다.";
   } else if (hasAttackLike(playerCard) && hasAttackLike(enemyCard)) {
-    winner = compareAttackRanges(playerCard, enemyCard, distance, playerCanHit, enemyCanHit);
+    winner = compareAttackRanges(
+      playerCard,
+      enemyCard,
+      distance,
+      playerCanHit,
+      enemyCanHit,
+      nextPlayerPose,
+      nextEnemyPose
+    );
+
     if (winner === "player") {
       winningCard = playerCard;
       effectText = "히트";
       message = "네 공격이 먼저 닿았다.";
-      commentary = "현재 거리와 줄에 더 잘 맞는 공격이 우위다.";
+      commentary = "현재 거리와 높이에 더 잘 맞는 공격이 우위다.";
     } else if (winner === "enemy") {
       winningCard = enemyCard;
       effectText = "피격";
       message = "상대 공격이 먼저 닿았다.";
-      commentary = "현재 거리와 줄에 더 잘 맞는 공격이 우위다.";
+      commentary = "높이와 거리 판정이 동시에 맞아야 적중한다.";
     }
   } else if (playerCard.advance !== enemyCard.advance) {
     winner = playerCard.advance > enemyCard.advance ? "player" : "enemy";
@@ -570,8 +602,8 @@ export function resolvePhaseTurn(context: GameContext): ResolutionResult {
     nextEnemyHeartsHalf,
     nextPlayerX,
     nextEnemyX,
-    nextPlayerLane,
-    nextEnemyLane,
+    nextPlayerPose,
+    nextEnemyPose,
     message,
     commentary,
     effectText || (winner === "none" ? "패스" : ""),

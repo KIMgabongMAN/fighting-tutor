@@ -10,8 +10,8 @@ import { PhaseBanner } from "@/components/game/PhaseBanner";
 import { ReviewScreen } from "@/components/game/ReviewScreen";
 import {
   FORCED_VULNERABLE_CARD,
+  GRID_COLS,
   PHASE_META,
-  TILE_COUNT,
   TOTAL_HEARTS_HALF,
   UNIVERSAL_AWAKENING_CARD,
   UNIVERSAL_BURST_CARD,
@@ -28,12 +28,11 @@ import type {
   PhaseBannerState,
   PhaseId,
   PlayerRoleInPhase,
-  ResolutionResult,
   TurnRecord,
 } from "@/lib/game/types";
 
-const INITIAL_PLAYER_X = 1;
-const INITIAL_ENEMY_X = 5;
+const INITIAL_PLAYER_X = 2;
+const INITIAL_ENEMY_X = 6;
 const ENEMY_PERSONALITY: OpponentPersonality = "defensive";
 const DUEL_ANIMATION_MS = 4800;
 
@@ -51,7 +50,7 @@ function buildCardPool(
 
 function buildTurnRecord(
   prevState: GameState,
-  result: ResolutionResult,
+  result: ReturnType<typeof resolvePhaseTurn>,
   playerCard: CardDefinition,
   enemyCard: CardDefinition
 ): TurnRecord {
@@ -79,15 +78,15 @@ export default function Page() {
     enemyTension: 0,
     playerX: INITIAL_PLAYER_X,
     enemyX: INITIAL_ENEMY_X,
-    playerLane: "ground",
-    enemyLane: "ground",
+    playerPose: "stand",
+    enemyPose: "stand",
     phase: "opening",
     playerRoleInPhase: "neutral",
     playerStateText: "뉴트럴",
     enemyStateText: "뉴트럴",
-    message: "개막이다. 거리와 줄(공중/지상)을 먼저 읽어라.",
+    message: "개막이다. 거리와 높이를 먼저 읽어라.",
     commentary:
-      "이번 버전은 하트 4개 체력과 2x7 평면 전장 기준으로 진행된다.",
+      "이번 버전은 4x9 전장과 하트 4개 체력을 기준으로 진행된다.",
     turn: 1,
     round: 1,
     effectText: "",
@@ -171,7 +170,7 @@ export default function Page() {
 
   const applyResolvedResult = (
     prevState: GameState,
-    result: ResolutionResult,
+    result: ReturnType<typeof resolvePhaseTurn>,
     playerCard: CardDefinition,
     enemyCard: CardDefinition
   ) => {
@@ -188,8 +187,8 @@ export default function Page() {
       enemyTension: result.nextEnemyTension,
       playerX: result.nextPlayerX,
       enemyX: result.nextEnemyX,
-      playerLane: result.nextPlayerLane,
-      enemyLane: result.nextEnemyLane,
+      playerPose: result.nextPlayerPose,
+      enemyPose: result.nextEnemyPose,
       phase: result.nextPhase,
       playerRoleInPhase: result.nextPlayerRoleInPhase,
       playerStateText: result.nextPlayerStateText,
@@ -219,7 +218,11 @@ export default function Page() {
     }
   };
 
-  const startResolution = (currentStateForTurn: GameState, playerCard: CardDefinition, enemyCard: CardDefinition) => {
+  const startResolution = (
+    currentStateForTurn: GameState,
+    playerCard: CardDefinition,
+    enemyCard: CardDefinition
+  ) => {
     const context: GameContext = {
       currentState: currentStateForTurn,
       playerCard,
@@ -305,15 +308,15 @@ export default function Page() {
       enemyTension: 0,
       playerX: INITIAL_PLAYER_X,
       enemyX: INITIAL_ENEMY_X,
-      playerLane: "ground",
-      enemyLane: "ground",
+      playerPose: "stand",
+      enemyPose: "stand",
       phase: "opening",
       playerRoleInPhase: "neutral",
       playerStateText: "뉴트럴",
       enemyStateText: "뉴트럴",
-      message: "개막이다. 거리와 줄(공중/지상)을 먼저 읽어라.",
+      message: "개막이다. 거리와 높이를 먼저 읽어라.",
       commentary:
-        "이번 버전은 하트 4개 체력과 2x7 평면 전장 기준으로 진행된다.",
+        "이번 버전은 4x9 전장과 하트 4개 체력을 기준으로 진행된다.",
       turn: 1,
       round: 1,
       effectText: "",
@@ -387,7 +390,7 @@ export default function Page() {
         <div className="mx-auto flex h-full w-full max-w-[1700px] flex-col">
           <div className="mb-3 flex items-center justify-between sm:mb-4">
             <div className="text-[10px] font-black tracking-[0.28em] text-zinc-500 sm:text-xs">
-              TRAINING BUILD V3 · HEART + 2x7
+              TRAINING BUILD V4 · 4x9 GRID · HEART SYSTEM
             </div>
 
             <button
@@ -441,8 +444,8 @@ export default function Page() {
                       playerRoleInPhase={state.playerRoleInPhase}
                       playerX={state.playerX}
                       enemyX={state.enemyX}
-                      playerLane={state.playerLane}
-                      enemyLane={state.enemyLane}
+                      playerPose={state.playerPose}
+                      enemyPose={state.enemyPose}
                       effectText={state.effectText}
                       previewCard={hoveredCard}
                     />
