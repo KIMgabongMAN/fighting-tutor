@@ -42,9 +42,15 @@ function buildPreviewTiles(playerX: number, card?: CardDefinition | null) {
 }
 
 function poseVisual(pose: CharacterPose) {
-  if (pose === "stand") return { bottom: "4%", height: "46%" };
-  if (pose === "crouch") return { bottom: "4%", height: "30%" };
-  return { bottom: "35%", height: "30%" };
+  if (pose === "stand") {
+    return { bottom: "6%", height: "50%" };
+  }
+
+  if (pose === "crouch") {
+    return { bottom: "6%", height: "34%" };
+  }
+
+  return { bottom: "26%", height: "38%" };
 }
 
 export function BattleField({
@@ -69,8 +75,9 @@ export function BattleField({
     <div className="relative overflow-hidden rounded-3xl border border-zinc-700 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-2xl">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_58%)]" />
       <div className="absolute inset-0 opacity-25 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_60%)]" />
+
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-72"
+        className="absolute inset-0 bg-cover bg-center opacity-80"
         style={{ backgroundImage: "url('/battlefield/grid-room-bg.png')" }}
       />
 
@@ -78,7 +85,9 @@ export function BattleField({
         <div className="border border-zinc-600 bg-zinc-900 px-2 py-1 text-[10px] font-black tracking-[0.22em] text-zinc-300 sm:px-3 sm:text-xs">
           BATTLE FIELD · 4x9
         </div>
-        <div className="text-[10px] text-zinc-400 sm:text-sm">4x9 전장 · 높이 판정 분리</div>
+        <div className="text-[10px] text-zinc-400 sm:text-sm">
+          4x9 전장 · 높이 판정 분리
+        </div>
       </div>
 
       <div className="absolute left-1/2 top-3 z-20 w-full max-w-4xl -translate-x-1/2 px-3 sm:top-4 sm:px-4">
@@ -96,18 +105,28 @@ export function BattleField({
       ) : null}
 
       <div className="relative z-10 min-h-[460px] px-4 pb-20 pt-20 sm:min-h-[560px] sm:px-8 sm:pb-24 sm:pt-20">
-        <div className="absolute top-[84px] left-1/2 z-20 -translate-x-1/2 sm:top-[92px]">
+        <div className="absolute left-1/2 top-[84px] z-20 -translate-x-1/2 sm:top-[92px]">
           <div className="border border-zinc-500 bg-zinc-900/80 px-4 py-2 text-xs font-black tracking-[0.12em] text-zinc-100 shadow-lg sm:px-5 sm:text-sm sm:tracking-[0.18em]">
-            {phaseTitle} · {playerRoleInPhase === "attacker" ? "공격자" : playerRoleInPhase === "defender" ? "수비자" : "교전"}
+            {phaseTitle} ·{" "}
+            {playerRoleInPhase === "attacker"
+              ? "공격자"
+              : playerRoleInPhase === "defender"
+              ? "수비자"
+              : "교전"}
           </div>
         </div>
 
         <div className="absolute bottom-4 left-4 right-4 z-10 sm:bottom-6 sm:left-8 sm:right-8">
-          <div className="grid gap-1.5 sm:gap-2" style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))` }}>
+          <div
+            className="grid gap-1.5 sm:gap-2"
+            style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))` }}
+          >
             {Array.from({ length: GRID_COLS * 4 }, (_, index) => {
               const row = Math.floor(index / GRID_COLS);
               const col = index % GRID_COLS;
-              const isPreview = previewTiles.some((tile) => tile.row === row && tile.col === col);
+              const isPreview = previewTiles.some(
+                (tile) => tile.row === row && tile.col === col
+              );
 
               return (
                 <div
@@ -128,20 +147,30 @@ export function BattleField({
         </div>
 
         <div className="pointer-events-none absolute bottom-[48px] left-4 right-4 z-20 sm:bottom-[60px] sm:left-8 sm:right-8">
-          <div className="relative h-[280px] sm:h-[340px]">
+          <div className="relative h-[300px] sm:h-[360px]">
             <div
               className="absolute -translate-x-1/2 transition-all duration-300"
-              style={{ left: playerLeft, bottom: playerVisual.bottom, height: playerVisual.height, width: 168 }}
+              style={{
+                left: playerLeft,
+                bottom: playerVisual.bottom,
+                height: playerVisual.height,
+                width: 182,
+              }}
             >
-              <div className="absolute inset-0 rounded-sm border border-red-500/28 bg-red-500/10 shadow-[0_0_18px_rgba(239,68,68,0.10)]" />
+              <div className="absolute bottom-1 left-1/2 h-4 w-24 -translate-x-1/2 rounded-full bg-black/35 blur-md" />
               <CharacterSprite side="player" pose={playerPose} />
             </div>
 
             <div
               className="absolute -translate-x-1/2 transition-all duration-300"
-              style={{ left: enemyLeft, bottom: enemyVisual.bottom, height: enemyVisual.height, width: 168 }}
+              style={{
+                left: enemyLeft,
+                bottom: enemyVisual.bottom,
+                height: enemyVisual.height,
+                width: 182,
+              }}
             >
-              <div className="absolute inset-0 rounded-sm border border-amber-400/28 bg-amber-400/10 shadow-[0_0_18px_rgba(251,191,36,0.10)]" />
+              <div className="absolute bottom-1 left-1/2 h-4 w-24 -translate-x-1/2 rounded-full bg-black/35 blur-md" />
               <CharacterSprite side="enemy" pose={enemyPose} />
             </div>
           </div>

@@ -1,46 +1,86 @@
-import type { CharacterPose } from "@/lib/game/types";
+"use client";
 
-type Props = {
-  side: "player" | "enemy";
-  pose: CharacterPose;
+export type CharacterGifPose = "stand" | "crouch" | "air";
+export type CharacterGifSide = "player" | "enemy";
+
+type CharacterSpriteProps = {
+  side: CharacterGifSide;
+  pose: CharacterGifPose;
+  className?: string;
 };
 
-function gifPath(side: "player" | "enemy", pose: CharacterPose) {
-  if (pose === "crouch") return side === "player" ? "/sprites/crouch_player.gif" : "/sprites/crouch_enemy.gif";
-  if (pose === "air") return side === "player" ? "/sprites/air_player.gif" : "/sprites/air_enemy.gif";
-  return side === "player" ? "/sprites/stand_player.gif" : "/sprites/stand_enemy.gif";
+function getGifPath(side: CharacterGifSide, pose: CharacterGifPose) {
+  if (side === "player") {
+    if (pose === "crouch") return "/sprites/player/crouch.gif";
+    if (pose === "air") return "/sprites/player/air.gif";
+    return "/sprites/player/stand.gif";
+  }
+
+  if (pose === "crouch") return "/sprites/enemy/crouch.gif";
+  if (pose === "air") return "/sprites/enemy/air.gif";
+  return "/sprites/enemy/stand.gif";
 }
 
-function sizeByPose(pose: CharacterPose) {
+function getSpriteSize(pose: CharacterGifPose) {
   if (pose === "crouch") {
-    return { width: 150, height: 150 };
+    return {
+      width: 156,
+      height: 132,
+      bottom: 0,
+    };
   }
+
   if (pose === "air") {
-    return { width: 138, height: 138 };
+    return {
+      width: 168,
+      height: 168,
+      bottom: 18,
+    };
   }
-  return { width: 168, height: 168 };
+
+  return {
+    width: 170,
+    height: 215,
+    bottom: 0,
+  };
 }
 
-export function CharacterSprite({ side, pose }: Props) {
-  const size = sizeByPose(pose);
+export function CharacterSprite({
+  side,
+  pose,
+  className = "",
+}: CharacterSpriteProps) {
+  const src = getGifPath(side, pose);
+  const size = getSpriteSize(pose);
 
   return (
     <div
-      className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2"
-      style={{ width: size.width, height: size.height }}
+      className={className}
+      style={{
+        position: "absolute",
+        left: "50%",
+        bottom: `${size.bottom}px`,
+        transform: "translateX(-50%)",
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        pointerEvents: "none",
+        zIndex: 5,
+      }}
     >
       <img
-        src={gifPath(side, pose)}
-        alt=""
+        src={src}
+        alt={`${side}-${pose}`}
         draggable={false}
-        className={`absolute bottom-0 left-1/2 -translate-x-1/2 select-none object-contain ${
-          side === "enemy" ? "-scale-x-100" : ""
-        }`}
         style={{
-          width: size.width,
-          height: size.height,
-          imageRendering: "pixelated",
-          transformOrigin: "bottom center",
+          maxWidth: "100%",
+          maxHeight: "100%",
+          objectFit: "contain",
+          userSelect: "none",
+          pointerEvents: "none",
+          display: "block",
         }}
       />
     </div>
